@@ -15,7 +15,7 @@ cd api
 dotnet restore
 dotnet run
 ```
-API runs on `https://localhost:7000` (or configured port)
+API runs on `https://localhost:5050` (or configured port)
 
 ### Frontend (Web)
 ```bash
