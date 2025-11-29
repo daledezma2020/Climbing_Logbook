@@ -1,0 +1,74 @@
+# Build results
+bin/
+obj/
+out/
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+
+# JetRider Rider
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/
+
+# MonoDevelop/Xamarin Studio
+*.userprefs
+
+# Build Results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# NuGet Packages
+*.nupkg
+*.snupkg
+**/packages/*
+project.lock.json
+project.fragment.lock.json
+
+# Test Results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# Secrets and sensitive data
+appsettings.Development.json
+appsettings.Local.json
+*.secret
+*.env
+.env
+.env.local
+
+# Database
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log\
+
+# Others
+*.dll
+*.cache
+*.pdb
