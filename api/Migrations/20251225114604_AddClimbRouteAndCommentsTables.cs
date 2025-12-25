@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace api.Migrations
 {
     /// <inheritdoc />
-    public partial class AddClimbRouteAndCommentModels : Migration
+    public partial class AddClimbRouteAndCommentsTables : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,6 +18,7 @@ namespace api.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Grade = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     AverageRating = table.Column<decimal>(type: "numeric", nullable: false),
                     Picture = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),

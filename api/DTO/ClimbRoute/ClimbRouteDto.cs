@@ -1,12 +1,9 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace api.Models;
+namespace api.DTO.ClimbRoute;
 
-public class ClimbRoute
+public class ClimbRouteDto
 {
-    [Key]
-    public int Id { get; set; }
-
     [Required]
     [StringLength(100)]
     public string Name { get; set; } = string.Empty;
@@ -27,10 +24,4 @@ public class ClimbRoute
     [Required]
     [StringLength(200)]
     public string Location { get; set; } = string.Empty;
-
-    public List<Comment> Comments { get; set; } = new();
-
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    public DateTime? UpdatedAt { get; set; }
 }

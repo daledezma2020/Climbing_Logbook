@@ -1,3 +1,4 @@
+using api.DTO.ClimbRoute;
 using api.Interfaces;
 using api.Models;
 using Microsoft.AspNetCore.Mvc;
@@ -57,7 +58,7 @@ public class RoutesController : ControllerBase
 
     // POST: api/routes
     [HttpPost]
-    public async Task<ActionResult<ClimbRoute>> CreateRoute([FromBody] ClimbRoute climbRoute)
+    public async Task<ActionResult<ClimbRoute>> CreateRoute([FromBody] ClimbRouteDto dto)
     {
         try
         {
@@ -65,6 +66,16 @@ public class RoutesController : ControllerBase
             {
                 return BadRequest(ModelState);
             }
+
+            var climbRoute = new ClimbRoute
+            {
+                Name = dto.Name,
+                Grade = dto.Grade,
+                AverageRating = dto.AverageRating,
+                Picture = dto.Picture,
+                Video = dto.Video,
+                Location = dto.Location
+            };
 
             var createdRoute = await _climbRouteService.CreateClimbRouteAsync(climbRoute);
             return CreatedAtAction(nameof(GetRoute), new { id = createdRoute.Id }, createdRoute);
@@ -78,7 +89,7 @@ public class RoutesController : ControllerBase
 
     // PUT: api/routes/5
     [HttpPut("{id}")]
-    public async Task<ActionResult<ClimbRoute>> UpdateRoute(int id, [FromBody] ClimbRoute climbRoute)
+    public async Task<ActionResult<ClimbRoute>> UpdateRoute(int id, [FromBody] ClimbRouteDto dto)
     {
         try
         {
@@ -86,6 +97,16 @@ public class RoutesController : ControllerBase
             {
                 return BadRequest(ModelState);
             }
+
+            var climbRoute = new ClimbRoute
+            {
+                Name = dto.Name,
+                Grade = dto.Grade,
+                AverageRating = dto.AverageRating,
+                Picture = dto.Picture,
+                Video = dto.Video,
+                Location = dto.Location
+            };
 
             var updatedRoute = await _climbRouteService.UpdateClimbRouteAsync(id, climbRoute);
 

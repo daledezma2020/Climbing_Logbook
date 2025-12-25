@@ -11,8 +11,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251225100523_AddClimbRouteAndCommentModels")]
-    partial class AddClimbRouteAndCommentModels
+    [Migration("20251225114604_AddClimbRouteAndCommentsTables")]
+    partial class AddClimbRouteAndCommentsTables
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -47,6 +47,11 @@ namespace api.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<string>("Picture")
                         .HasMaxLength(500)

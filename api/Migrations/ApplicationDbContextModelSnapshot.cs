@@ -45,6 +45,11 @@ namespace api.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("Picture")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");

@@ -45,6 +45,7 @@ public class ClimbRouteService : IClimbRouteService
             return null;
         }
 
+        existingClimbRoute.Name = climbRoute.Name;
         existingClimbRoute.Grade = climbRoute.Grade;
         existingClimbRoute.AverageRating = climbRoute.AverageRating;
         existingClimbRoute.Picture = climbRoute.Picture;

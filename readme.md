@@ -29,3 +29,4 @@ Web app runs on `http://localhost:5173`
 
 - API includes Swagger UI at `/swagger` in development mode
 - CORS configured to allow frontend at `localhost:5173`
+- Database on local during development is PostgresSQL (Using user secrets to store connection string)
