@@ -24,35 +24,6 @@ function App() {
           <p className="text-slate-600">Track your climbing journey</p>
         </div>
 
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>API Connection Test</span>
-              <Badge variant={data ? "default" : "secondary"}>
-                {data ? "Connected" : "Loading..."}
-              </Badge>
-            </CardTitle>
-            <CardDescription>
-              Testing connection to .NET backend
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="bg-slate-50 p-4 rounded-lg">
-              <pre className="text-sm overflow-auto">
-                {data ? JSON.stringify(data, null, 2) : 'Fetching data...'}
-              </pre>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => window.location.reload()}>
-                Refresh Data
-              </Button>
-              <Button variant="outline">
-                View Details
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
