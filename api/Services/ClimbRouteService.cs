@@ -87,4 +87,29 @@ public class ClimbRouteService : IClimbRouteService
     {
         return await _context.ClimbRoutes.AnyAsync(r => r.Id == id);
     }
+
+    public async Task<int> SeedMoonboardRoutesAsync(IEnumerable<ClimbRoute> moonboardRoutes)
+    {
+        var routesToAdd = moonboardRoutes.Select(route =>
+        {
+            route.CreatedAt = DateTime.UtcNow;
+            return route;
+        }).ToList();
+
+        await _context.ClimbRoutes.AddRangeAsync(routesToAdd);
+        await _context.SaveChangesAsync();
+
+        return routesToAdd.Count;
+    }
+
+    public async Task<int> DeleteAllClimbRoutesAsync()
+    {
+        var allRoutes = await _context.ClimbRoutes.ToListAsync();
+        var count = allRoutes.Count;
+
+        _context.ClimbRoutes.RemoveRange(allRoutes);
+        await _context.SaveChangesAsync();
+
+        return count;
+    }
 }

@@ -18,6 +18,12 @@ public class ClimbRoute
     [Range(0, 5)]
     public decimal AverageRating { get; set; }
 
+    [StringLength(100)]
+    public string? Setter { get; set; }
+
+    [StringLength(100)]
+    public string? Type { get; set; }
+
     [StringLength(500)]
     public string? Picture { get; set; }
 

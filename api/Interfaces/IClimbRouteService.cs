@@ -10,4 +10,6 @@ public interface IClimbRouteService
     Task<ClimbRoute?> UpdateClimbRouteAsync(int id, ClimbRoute climbRoute);
     Task<bool> DeleteClimbRouteAsync(int id);
     Task<bool> ClimbRouteExistsAsync(int id);
+    Task<int> SeedMoonboardRoutesAsync(IEnumerable<ClimbRoute> moonboardRoutes);
+    Task<int> DeleteAllClimbRoutesAsync();
 }
