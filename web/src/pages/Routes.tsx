@@ -18,9 +18,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Star, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
+import { Star, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, X, Filter } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Combobox } from '@/components/ui/combobox';
 
-type SortField = 'name' | 'grade' | 'location' | 'averageRating';
+type SortField = 'name' | 'grade' | 'location' | 'averageRating' | 'setter' | 'type';
 type SortDirection = 'asc' | 'desc';
 
 export default function Routes() {
@@ -30,6 +32,8 @@ export default function Routes() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGrade, setSelectedGrade] = useState<string>('all');
   const [selectedLocation, setSelectedLocation] = useState<string>('all');
+  const [selectedSetter, setSelectedSetter] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('all');
   const [minRating, setMinRating] = useState<number>(0);
 
   // Pagination states
@@ -42,7 +46,12 @@ export default function Routes() {
 
   // Extract unique grades and locations
   const uniqueGrades = useMemo(() => {
-    const grades = Array.from(new Set(routes.map(r => r.grade))).sort();
+    const grades = Array.from(new Set(routes.map(r => r.grade))).sort((a, b) => {
+      // Extract numeric part from grade strings (e.g., "V15" -> 15)
+      const numA = parseInt(a.replace(/\D/g, ''), 10);
+      const numB = parseInt(b.replace(/\D/g, ''), 10);
+      return numA - numB;
+    });
     return grades;
   }, [routes]);
 
@@ -51,21 +60,37 @@ export default function Routes() {
     return locations;
   }, [routes]);
 
+  const uniqueSetters = useMemo(() => {
+    const setters = Array.from(new Set(routes.map(r => r.setter).filter(Boolean))).sort();
+    return setters as string[];
+  }, [routes]);
+
+  const uniqueTypes = useMemo(() => {
+    const types = Array.from(new Set(routes.map(r => r.type).filter(Boolean))).sort();
+    return types as string[];
+  }, [routes]);
+
   // Filter and sort routes
   const filteredAndSortedRoutes = useMemo(() => {
     let filtered = routes.filter(route => {
       const matchesSearch = route.name.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesGrade = selectedGrade === 'all' || route.grade === selectedGrade;
       const matchesLocation = selectedLocation === 'all' || route.location === selectedLocation;
+      const matchesSetter = selectedSetter === 'all' || route.setter === selectedSetter;
+      const matchesType = selectedType === 'all' || route.type === selectedType;
       const matchesRating = route.averageRating >= minRating;
 
-      return matchesSearch && matchesGrade && matchesLocation && matchesRating;
+      return matchesSearch && matchesGrade && matchesLocation && matchesSetter && matchesType && matchesRating;
     });
 
     // Sort routes
     filtered.sort((a, b) => {
       let aValue = a[sortField];
       let bValue = b[sortField];
+
+      // Handle null values - treat as empty string and push to end
+      if (aValue === null || aValue === undefined) aValue = '';
+      if (bValue === null || bValue === undefined) bValue = '';
 
       if (typeof aValue === 'string' && typeof bValue === 'string') {
         aValue = aValue.toLowerCase();
@@ -78,7 +103,7 @@ export default function Routes() {
     });
 
     return filtered;
-  }, [routes, searchQuery, selectedGrade, selectedLocation, minRating, sortField, sortDirection]);
+  }, [routes, searchQuery, selectedGrade, selectedLocation, selectedSetter, selectedType, minRating, sortField, sortDirection]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredAndSortedRoutes.length / itemsPerPage);
@@ -112,11 +137,13 @@ export default function Routes() {
     setSearchQuery('');
     setSelectedGrade('all');
     setSelectedLocation('all');
+    setSelectedSetter('all');
+    setSelectedType('all');
     setMinRating(0);
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = searchQuery || selectedGrade !== 'all' || selectedLocation !== 'all' || minRating > 0;
+  const hasActiveFilters = searchQuery || selectedGrade !== 'all' || selectedLocation !== 'all' || selectedSetter !== 'all' || selectedType !== 'all' || minRating > 0;
 
   const renderStars = (rating: number) => {
     return (
@@ -164,8 +191,8 @@ export default function Routes() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="space-y-2">
+      <div className="max-w-[1600px] mx-auto">
+        <div className="mb-6 space-y-2">
           <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
             Climbing Routes
           </h1>
@@ -174,114 +201,161 @@ export default function Routes() {
           </p>
         </div>
 
-        {/* Filters Section */}
-        <div className="bg-white rounded-lg border shadow-sm p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearFilters}
-                className="text-slate-600 hover:text-slate-900"
-              >
-                <X className="h-4 w-4 mr-2" />
-                Clear filters
-              </Button>
-            )}
-          </div>
+        <div className="flex gap-6">
+          {/* Filters Sidebar */}
+          <aside className="w-72 flex-shrink-0">
+            <Card>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Filter className="h-5 w-5" />
+                    Filters
+                  </CardTitle>
+                  {hasActiveFilters && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="h-8 px-2"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Search Input */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Search</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      placeholder="Search routes..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        setSearchQuery(e.target.value);
+                        handleFilterChange();
+                      }}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Search Input */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Search</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                  placeholder="Search routes..."
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    handleFilterChange();
-                  }}
-                  className="pl-9"
-                />
-              </div>
-            </div>
+                {/* Grade Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Grade</label>
+                  <Select
+                    value={selectedGrade}
+                    onValueChange={(value) => {
+                      setSelectedGrade(value);
+                      handleFilterChange();
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All grades" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All grades</SelectItem>
+                      {uniqueGrades.map((grade) => (
+                        <SelectItem key={grade} value={grade}>
+                          {grade}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            {/* Grade Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Grade</label>
-              <Select
-                value={selectedGrade}
-                onValueChange={(value) => {
-                  setSelectedGrade(value);
-                  handleFilterChange();
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All grades" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All grades</SelectItem>
-                  {uniqueGrades.map((grade) => (
-                    <SelectItem key={grade} value={grade}>
-                      {grade}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {/* Location Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Location</label>
+                  <Combobox
+                    options={[
+                      { value: 'all', label: 'All locations' },
+                      ...uniqueLocations.map(loc => ({ value: loc, label: loc }))
+                    ]}
+                    value={selectedLocation}
+                    onValueChange={(value) => {
+                      setSelectedLocation(value);
+                      handleFilterChange();
+                    }}
+                    placeholder="All locations"
+                    searchPlaceholder="Search locations..."
+                    emptyMessage="No location found."
+                  />
+                </div>
 
-            {/* Location Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Location</label>
-              <Select
-                value={selectedLocation}
-                onValueChange={(value) => {
-                  setSelectedLocation(value);
-                  handleFilterChange();
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All locations" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All locations</SelectItem>
-                  {uniqueLocations.map((location) => (
-                    <SelectItem key={location} value={location}>
-                      {location}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                {/* Setter Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Setter</label>
+                  <Combobox
+                    options={[
+                      { value: 'all', label: 'All setters' },
+                      ...uniqueSetters.map(setter => ({ value: setter, label: setter }))
+                    ]}
+                    value={selectedSetter}
+                    onValueChange={(value) => {
+                      setSelectedSetter(value);
+                      handleFilterChange();
+                    }}
+                    placeholder="All setters"
+                    searchPlaceholder="Search setters..."
+                    emptyMessage="No setter found."
+                  />
+                </div>
 
-            {/* Rating Filter */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Min Rating</label>
-              <Select
-                value={minRating.toString()}
-                onValueChange={(value) => {
-                  setMinRating(Number(value));
-                  handleFilterChange();
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Any rating" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0">Any rating</SelectItem>
-                  <SelectItem value="1">1+ stars</SelectItem>
-                  <SelectItem value="2">2+ stars</SelectItem>
-                  <SelectItem value="3">3+ stars</SelectItem>
-                  <SelectItem value="4">4+ stars</SelectItem>
-                  <SelectItem value="5">5 stars</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </div>
+                {/* Type Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Type</label>
+                  <Select
+                    value={selectedType}
+                    onValueChange={(value) => {
+                      setSelectedType(value);
+                      handleFilterChange();
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="All types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All types</SelectItem>
+                      {uniqueTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Rating Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Min Rating</label>
+                  <Select
+                    value={minRating.toString()}
+                    onValueChange={(value) => {
+                      setMinRating(Number(value));
+                      handleFilterChange();
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Any rating" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="0">Any rating</SelectItem>
+                      <SelectItem value="1">1+ stars</SelectItem>
+                      <SelectItem value="2">2+ stars</SelectItem>
+                      <SelectItem value="3">3+ stars</SelectItem>
+                      <SelectItem value="4">4+ stars</SelectItem>
+                      <SelectItem value="5">5 stars</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+          </aside>
+
+          {/* Main Content */}
+          <div className="flex-1 space-y-6">
 
         {/* Table Section */}
         <div className="bg-white rounded-lg border shadow-sm">
@@ -314,6 +388,28 @@ export default function Routes() {
                   <Button
                     variant="ghost"
                     size="sm"
+                    onClick={() => handleSort('setter')}
+                    className="hover:bg-slate-100"
+                  >
+                    Setter
+                    {getSortIcon('setter')}
+                  </Button>
+                </TableHead>
+                <TableHead className="px-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('type')}
+                    className="hover:bg-slate-100"
+                  >
+                    Type
+                    {getSortIcon('type')}
+                  </Button>
+                </TableHead>
+                <TableHead className="px-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => handleSort('location')}
                     className="hover:bg-slate-100"
                   >
@@ -337,7 +433,7 @@ export default function Routes() {
             <TableBody>
               {paginatedRoutes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={6} className="text-center py-8 text-slate-500">
                     {hasActiveFilters
                       ? 'No routes match your filters. Try adjusting your search criteria.'
                       : 'No routes found. Add your first climbing route!'}
@@ -350,6 +446,8 @@ export default function Routes() {
                     <TableCell>
                       <Badge variant="secondary">{route.grade}</Badge>
                     </TableCell>
+                    <TableCell className="text-slate-600">{route.setter || '-'}</TableCell>
+                    <TableCell className="text-slate-600">{route.type || '-'}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-slate-600">
                         <MapPin className="h-4 w-4" />
@@ -438,6 +536,8 @@ export default function Routes() {
             </div>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );

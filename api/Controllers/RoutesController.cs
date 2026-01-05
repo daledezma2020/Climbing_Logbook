@@ -177,6 +177,8 @@ public class RoutesController : ControllerBase
                 Name = benchmark.GetProperty("name").GetString() ?? "Unknown",
                 Grade = $"V{benchmark.GetProperty("grade").GetInt32()}",
                 Location = MapMoonboardType(benchmark.GetProperty("mb_type").GetInt32()),
+                Setter = benchmark.GetProperty("setter").GetString(),
+                Type = "Board",
                 AverageRating = 5
             }).ToList();
 
