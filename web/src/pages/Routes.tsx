@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { useClimbRoutes } from '@/hooks/climbroutes';
 import {
   Table,
@@ -7,12 +8,115 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Star, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Star, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, X } from 'lucide-react';
+
+type SortField = 'name' | 'grade' | 'location' | 'averageRating';
+type SortDirection = 'asc' | 'desc';
 
 export default function Routes() {
   const { routes, loading, error } = useClimbRoutes();
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedGrade, setSelectedGrade] = useState<string>('all');
+  const [selectedLocation, setSelectedLocation] = useState<string>('all');
+  const [minRating, setMinRating] = useState<number>(0);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+
+  // Sorting states
+  const [sortField, setSortField] = useState<SortField>('name');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  // Extract unique grades and locations
+  const uniqueGrades = useMemo(() => {
+    const grades = Array.from(new Set(routes.map(r => r.grade))).sort();
+    return grades;
+  }, [routes]);
+
+  const uniqueLocations = useMemo(() => {
+    const locations = Array.from(new Set(routes.map(r => r.location))).sort();
+    return locations;
+  }, [routes]);
+
+  // Filter and sort routes
+  const filteredAndSortedRoutes = useMemo(() => {
+    let filtered = routes.filter(route => {
+      const matchesSearch = route.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesGrade = selectedGrade === 'all' || route.grade === selectedGrade;
+      const matchesLocation = selectedLocation === 'all' || route.location === selectedLocation;
+      const matchesRating = route.averageRating >= minRating;
+
+      return matchesSearch && matchesGrade && matchesLocation && matchesRating;
+    });
+
+    // Sort routes
+    filtered.sort((a, b) => {
+      let aValue = a[sortField];
+      let bValue = b[sortField];
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return filtered;
+  }, [routes, searchQuery, selectedGrade, selectedLocation, minRating, sortField, sortDirection]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredAndSortedRoutes.length / itemsPerPage);
+  const paginatedRoutes = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredAndSortedRoutes.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredAndSortedRoutes, currentPage, itemsPerPage]);
+
+  // Reset to first page when filters change
+  const handleFilterChange = () => {
+    setCurrentPage(1);
+  };
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const getSortIcon = (field: SortField) => {
+    if (sortField !== field) return <ArrowUpDown className="ml-2 h-4 w-4" />;
+    return sortDirection === 'asc'
+      ? <ArrowUp className="ml-2 h-4 w-4" />
+      : <ArrowDown className="ml-2 h-4 w-4" />;
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSelectedGrade('all');
+    setSelectedLocation('all');
+    setMinRating(0);
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = searchQuery || selectedGrade !== 'all' || selectedLocation !== 'all' || minRating > 0;
 
   const renderStars = (rating: number) => {
     return (
@@ -70,33 +174,178 @@ export default function Routes() {
           </p>
         </div>
 
+        {/* Filters Section */}
+        <div className="bg-white rounded-lg border shadow-sm p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-900">Filters</h2>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="text-slate-600 hover:text-slate-900"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Clear filters
+              </Button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Search Input */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Search</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Search routes..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    handleFilterChange();
+                  }}
+                  className="pl-9"
+                />
+              </div>
+            </div>
+
+            {/* Grade Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Grade</label>
+              <Select
+                value={selectedGrade}
+                onValueChange={(value) => {
+                  setSelectedGrade(value);
+                  handleFilterChange();
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All grades" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All grades</SelectItem>
+                  {uniqueGrades.map((grade) => (
+                    <SelectItem key={grade} value={grade}>
+                      {grade}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Location Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Location</label>
+              <Select
+                value={selectedLocation}
+                onValueChange={(value) => {
+                  setSelectedLocation(value);
+                  handleFilterChange();
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All locations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All locations</SelectItem>
+                  {uniqueLocations.map((location) => (
+                    <SelectItem key={location} value={location}>
+                      {location}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Rating Filter */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Min Rating</label>
+              <Select
+                value={minRating.toString()}
+                onValueChange={(value) => {
+                  setMinRating(Number(value));
+                  handleFilterChange();
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Any rating" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0">Any rating</SelectItem>
+                  <SelectItem value="1">1+ stars</SelectItem>
+                  <SelectItem value="2">2+ stars</SelectItem>
+                  <SelectItem value="3">3+ stars</SelectItem>
+                  <SelectItem value="4">4+ stars</SelectItem>
+                  <SelectItem value="5">5 stars</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Table Section */}
         <div className="bg-white rounded-lg border shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[80px]">Picture</TableHead>
-                <TableHead>Route Name</TableHead>
-                <TableHead>Grade</TableHead>
-                <TableHead>Location</TableHead>
-                <TableHead>Rating</TableHead>
+                <TableHead className="px-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('name')}
+                    className="hover:bg-slate-100"
+                  >
+                    Route Name
+                    {getSortIcon('name')}
+                  </Button>
+                </TableHead>
+                <TableHead className="px-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('grade')}
+                    className="hover:bg-slate-100"
+                  >
+                    Grade
+                    {getSortIcon('grade')}
+                  </Button>
+                </TableHead>
+                <TableHead className="px-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('location')}
+                    className="hover:bg-slate-100"
+                  >
+                    Location
+                    {getSortIcon('location')}
+                  </Button>
+                </TableHead>
+                <TableHead className="px-0">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSort('averageRating')}
+                    className="hover:bg-slate-100"
+                  >
+                    Rating
+                    {getSortIcon('averageRating')}
+                  </Button>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {routes.length === 0 ? (
+              {paginatedRoutes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-slate-500">
-                    No routes found. Add your first climbing route!
+                  <TableCell colSpan={4} className="text-center py-8 text-slate-500">
+                    {hasActiveFilters
+                      ? 'No routes match your filters. Try adjusting your search criteria.'
+                      : 'No routes found. Add your first climbing route!'}
                   </TableCell>
                 </TableRow>
               ) : (
-                routes.map((route) => (
+                paginatedRoutes.map((route) => (
                   <TableRow key={route.id} className="hover:bg-slate-50">
-                    <TableCell>
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={route.picture || undefined} alt={route.name} />
-                        <AvatarFallback>{route.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                    </TableCell>
                     <TableCell className="font-medium">{route.name}</TableCell>
                     <TableCell>
                       <Badge variant="secondary">{route.grade}</Badge>
@@ -115,9 +364,78 @@ export default function Routes() {
           </Table>
         </div>
 
-        {routes.length > 0 && (
-          <div className="text-center text-sm text-slate-600">
-            Showing {routes.length} route{routes.length !== 1 ? 's' : ''}
+        {/* Pagination Section */}
+        {filteredAndSortedRoutes.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white rounded-lg border shadow-sm p-4">
+            <div className="flex items-center gap-4">
+              <p className="text-sm text-slate-600">
+                Showing {((currentPage - 1) * itemsPerPage) + 1} to{' '}
+                {Math.min(currentPage * itemsPerPage, filteredAndSortedRoutes.length)} of{' '}
+                {filteredAndSortedRoutes.length} routes
+              </p>
+
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={(value) => {
+                  setItemsPerPage(Number(value));
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectTrigger className="w-[130px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="5">5 per page</SelectItem>
+                  <SelectItem value="10">10 per page</SelectItem>
+                  <SelectItem value="25">25 per page</SelectItem>
+                  <SelectItem value="50">50 per page</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+
+              <div className="flex items-center gap-2 px-4">
+                <span className="text-sm text-slate-600">
+                  Page {currentPage} of {totalPages}
+                </span>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         )}
       </div>

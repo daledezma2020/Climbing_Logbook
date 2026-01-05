@@ -2,6 +2,7 @@ using api.DTO.ClimbRoute;
 using api.Interfaces;
 using api.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace api.Controllers;
 
@@ -144,5 +145,81 @@ public class RoutesController : ControllerBase
             _logger.LogError(ex, "Error deleting route with ID {Id}", id);
             return StatusCode(500, "An error occurred while deleting the route");
         }
+    }
+
+    // POST: api/routes/seed-moonboard
+    [HttpPost("seed-moonboard")]
+    public async Task<ActionResult> SeedMoonboardRoutes()
+    {
+        try
+        {
+            var benchmarksPath = Path.Combine(Directory.GetCurrentDirectory(), "seeding", "benchmarks.json");
+
+            if (!System.IO.File.Exists(benchmarksPath))
+            {
+                return NotFound("benchmarks.json file not found");
+            }
+
+            var jsonContent = await System.IO.File.ReadAllTextAsync(benchmarksPath);
+            var options = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            };
+            var benchmarks = JsonSerializer.Deserialize<List<JsonElement>>(jsonContent, options);
+
+            if (benchmarks == null || !benchmarks.Any())
+            {
+                return BadRequest("No benchmarks found in the file");
+            }
+
+            var moonboardRoutes = benchmarks.Select(benchmark => new ClimbRoute
+            {
+                Name = benchmark.GetProperty("name").GetString() ?? "Unknown",
+                Grade = $"V{benchmark.GetProperty("grade").GetInt32()}",
+                Location = MapMoonboardType(benchmark.GetProperty("mb_type").GetInt32()),
+                AverageRating = 5
+            }).ToList();
+
+            var count = await _climbRouteService.SeedMoonboardRoutesAsync(moonboardRoutes);
+
+            return Ok(new { message = $"Successfully seeded {count} Moonboard routes", count });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error seeding Moonboard routes");
+            return StatusCode(500, "An error occurred while seeding Moonboard routes");
+        }
+    }
+
+    // DELETE: api/routes/delete-all
+    // WARNING: This endpoint is for development/testing purposes only
+    [HttpDelete("delete-all")]
+    public async Task<ActionResult> DeleteAllRoutes()
+    {
+        try
+        {
+            var count = await _climbRouteService.DeleteAllClimbRoutesAsync();
+
+            return Ok(new { message = $"Successfully deleted {count} routes from the database", count });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting all routes");
+            return StatusCode(500, "An error occurred while deleting all routes");
+        }
+    }
+
+    private static string MapMoonboardType(int mbType)
+    {
+        return mbType switch
+        {
+            0 => "MoonBoard 2016",
+            1 => "MoonBoard 2017",
+            2 => "MoonBoard 2019",
+            3 => "Mini MoonBoard 2020",
+            4 => "MoonBoard 2024",
+            5 => "Mini MoonBoard 2025",
+            _ => $"MoonBoard (Unknown Type {mbType})"
+        };
     }
 }
