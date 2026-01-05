@@ -27,17 +27,17 @@ export function useClimbRoutes(): UseClimbRoutesReturn {
 
       // Transform PascalCase to camelCase
       const transformedRoutes = data.map((route: any) => ({
-        id: route.id || route.Id,
-        name: route.name || route.Name,
-        grade: route.grade || route.Grade,
-        averageRating: route.averageRating || route.AverageRating,
-        setter: route.setter || route.Setter,
-        type: route.type || route.Type,
-        picture: route.picture || route.Picture,
-        video: route.video || route.Video,
-        location: route.location || route.Location,
-        createdAt: route.createdAt || route.CreatedAt,
-        updatedAt: route.updatedAt || route.UpdatedAt
+        id: route.id ?? route.Id,
+        name: route.name ?? route.Name,
+        grade: route.grade ?? route.Grade,
+        averageRating: route.averageRating ?? route.AverageRating,
+        setter: route.setter ?? route.Setter,
+        type: route.type ?? route.Type,
+        picture: route.picture ?? route.Picture,
+        video: route.video ?? route.Video,
+        location: route.location ?? route.Location,
+        createdAt: route.createdAt ?? route.CreatedAt,
+        updatedAt: route.updatedAt ?? route.UpdatedAt
       }));
 
       setRoutes(transformedRoutes);

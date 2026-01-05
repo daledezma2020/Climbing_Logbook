@@ -27,6 +27,7 @@ interface ComboboxProps {
   emptyMessage?: string
   searchPlaceholder?: string
   className?: string
+  allowCustomValue?: boolean
 }
 
 export function Combobox({
@@ -37,12 +38,23 @@ export function Combobox({
   emptyMessage = "No option found.",
   searchPlaceholder = "Search...",
   className,
+  allowCustomValue = false,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false)
+  const [searchValue, setSearchValue] = React.useState("")
 
   // Find the label for the current value
   const selectedOption = options.find((option) => option.value === value)
-  const displayValue = selectedOption ? selectedOption.label : placeholder
+  const displayValue = selectedOption ? selectedOption.label : (value || placeholder)
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (allowCustomValue && e.key === "Enter" && searchValue) {
+      e.preventDefault()
+      onValueChange(searchValue)
+      setSearchValue("")
+      setOpen(false)
+    }
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -59,9 +71,22 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" align="start">
         <Command>
-          <CommandInput placeholder={searchPlaceholder} />
+          <CommandInput
+            placeholder={searchPlaceholder}
+            value={searchValue}
+            onValueChange={setSearchValue}
+            onKeyDown={handleKeyDown}
+          />
           <CommandList>
-            <CommandEmpty>{emptyMessage}</CommandEmpty>
+            <CommandEmpty>
+              {allowCustomValue && searchValue ? (
+                <div className="px-2 py-1.5 text-sm">
+                  Press Enter to add "{searchValue}"
+                </div>
+              ) : (
+                emptyMessage
+              )}
+            </CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
@@ -69,6 +94,7 @@ export function Combobox({
                   value={option.value}
                   onSelect={(currentValue) => {
                     onValueChange(currentValue === value ? "" : currentValue)
+                    setSearchValue("")
                     setOpen(false)
                   }}
                 >
