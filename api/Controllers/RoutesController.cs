@@ -75,7 +75,9 @@ public class RoutesController : ControllerBase
                 AverageRating = dto.AverageRating,
                 Picture = dto.Picture,
                 Video = dto.Video,
-                Location = dto.Location
+                Location = dto.Location,
+                Setter = dto.Setter,
+                Type = dto.Type
             };
 
             var createdRoute = await _climbRouteService.CreateClimbRouteAsync(climbRoute);
@@ -106,7 +108,9 @@ public class RoutesController : ControllerBase
                 AverageRating = dto.AverageRating,
                 Picture = dto.Picture,
                 Video = dto.Video,
-                Location = dto.Location
+                Location = dto.Location,
+                Setter = dto.Setter,
+                Type = dto.Type
             };
 
             var updatedRoute = await _climbRouteService.UpdateClimbRouteAsync(id, climbRoute);

@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useClimbRoutes } from '@/hooks/climbroutes';
 import {
   Table,
@@ -18,15 +19,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Star, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, X, Filter } from 'lucide-react';
+import { Star, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, X, Filter, Plus, Trash2, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Combobox } from '@/components/ui/combobox';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 type SortField = 'name' | 'grade' | 'location' | 'averageRating' | 'setter' | 'type';
 type SortDirection = 'asc' | 'desc';
 
 export default function Routes() {
-  const { routes, loading, error } = useClimbRoutes();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { routes, loading, error, refetch } = useClimbRoutes();
+  const hasRefetched = useRef(false);
+
+  // Refetch routes when returning from create page
+  useEffect(() => {
+    if (location.state?.refetch && !hasRefetched.current) {
+      refetch();
+      hasRefetched.current = true;
+      // Clear the state to prevent future refetches
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, location.pathname, refetch, navigate]);
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +65,11 @@ export default function Routes() {
   // Sorting states
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+
+  // Delete dialog state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [routeToDelete, setRouteToDelete] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Extract unique grades and locations
   const uniqueGrades = useMemo(() => {
@@ -145,6 +172,45 @@ export default function Routes() {
 
   const hasActiveFilters = searchQuery || selectedGrade !== 'all' || selectedLocation !== 'all' || selectedSetter !== 'all' || selectedType !== 'all' || minRating > 0;
 
+  const handleDeleteClick = (routeId: number) => {
+    setRouteToDelete(routeId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!routeToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      const response = await fetch(`http://localhost:5050/api/routes/${routeToDelete}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to delete route: ${response.status}`);
+      }
+
+      // Refresh the routes list
+      refetch();
+      setDeleteDialogOpen(false);
+      setRouteToDelete(null);
+    } catch (err) {
+      console.error('Error deleting route:', err);
+      alert('Failed to delete route. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setRouteToDelete(null);
+  };
+
+  const handleEditClick = (routeId: number) => {
+    navigate(`/routes/edit/${routeId}`);
+  }
+
   const renderStars = (rating: number) => {
     return (
       <div className="flex items-center gap-1">
@@ -192,13 +258,19 @@ export default function Routes() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-[1600px] mx-auto">
-        <div className="mb-6 space-y-2">
-          <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
-            Climbing Routes
-          </h1>
-          <p className="text-slate-600">
-            Browse and discover all climbing routes
-          </p>
+        <div className="mb-6 flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
+              Climbing Routes
+            </h1>
+            <p className="text-slate-600">
+              Browse and discover all climbing routes
+            </p>
+          </div>
+          <Button onClick={() => navigate('/routes/create')} size="lg">
+            <Plus className="mr-2 h-5 w-5" />
+            Create Route
+          </Button>
         </div>
 
         <div className="flex gap-6">
@@ -428,12 +500,13 @@ export default function Routes() {
                     {getSortIcon('averageRating')}
                   </Button>
                 </TableHead>
+                <TableHead className="w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginatedRoutes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                  <TableCell colSpan={7} className="text-center py-8 text-slate-500">
                     {hasActiveFilters
                       ? 'No routes match your filters. Try adjusting your search criteria.'
                       : 'No routes found. Add your first climbing route!'}
@@ -455,6 +528,24 @@ export default function Routes() {
                       </div>
                     </TableCell>
                     <TableCell>{renderStars(route.averageRating)}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        // size="sm"
+                        onClick={() => handleDeleteClick(route.id)}
+                        className="!p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        // size="sm"
+                        onClick={() => handleEditClick(route.id)}
+                        className="p-0 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -539,6 +630,34 @@ export default function Routes() {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Route</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this route? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={isDeleting}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
