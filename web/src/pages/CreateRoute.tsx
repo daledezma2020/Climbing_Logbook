@@ -20,7 +20,7 @@ const TYPE_OPTIONS = ['Board', 'Gym', 'Outdoor', 'Urban', 'Other'];
 
 export default function CreateRoute() {
   const navigate = useNavigate();
-  const { routes } = useClimbRoutes();
+  const { routes, createRoute } = useClimbRoutes();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -82,24 +82,10 @@ export default function CreateRoute() {
         AverageRating: 0, // Default rating
       };
 
-      console.log('Payload being sent:', payload);
-      console.log('Raw values:', { name, grade, location, setter, type, picture, video });
+      await createRoute(payload);
 
-      const response = await fetch('http://localhost:5050/api/routes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
-      }
-
-      // Success - navigate back to routes page with refetch flag
-      navigate('/routes', { state: { refetch: true } });
+      // Success - navigate back to routes page
+      navigate('/routes');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create route');
     } finally {
@@ -123,7 +109,7 @@ export default function CreateRoute() {
             Create New Route
           </h1>
           <p className="text-slate-600 mt-2">
-            Add a new climbing route to your logbook
+            Add a new climbing route
           </p>
         </div>
 

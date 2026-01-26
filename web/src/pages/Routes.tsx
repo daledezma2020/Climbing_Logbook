@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Star, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, X, Filter, Plus, Trash2 } from 'lucide-react';
+import { Star, MapPin, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, X, Filter, Plus, Trash2, Pencil } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Combobox } from '@/components/ui/combobox';
 import {
@@ -206,6 +206,10 @@ export default function Routes() {
     setDeleteDialogOpen(false);
     setRouteToDelete(null);
   };
+
+  const handleEditClick = (routeId: number) => {
+    navigate(`/routes/edit/${routeId}`);
+  }
 
   const renderStars = (rating: number) => {
     return (
@@ -527,11 +531,19 @@ export default function Routes() {
                     <TableCell>
                       <Button
                         variant="ghost"
-                        size="sm"
+                        // size="sm"
                         onClick={() => handleDeleteClick(route.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        className="!p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        // size="sm"
+                        onClick={() => handleEditClick(route.id)}
+                        className="p-0 text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                      >
+                        <Pencil className="h-4 w-4" />
                       </Button>
                     </TableCell>
                   </TableRow>

@@ -3,6 +3,13 @@ import Layout from '@/components/layout/Layout';
 import Home from '@/pages/Home';
 import Routes from '@/pages/Routes';
 import CreateRoute from '@/pages/CreateRoute';
+import EditRoute from '@/pages/EditRoute';
+import { useParams } from 'react-router-dom';
+
+const EditRouteWrapper = () => {
+  const { id } = useParams<{ id: string }>();
+  return <EditRoute id={parseInt(id || '0', 10)} />;
+};
 
 const router = createBrowserRouter([
   {
@@ -21,6 +28,10 @@ const router = createBrowserRouter([
         path: 'routes/create',
         element: <CreateRoute />,
       },
+      {
+        path: 'routes/edit/:id',
+        element: <EditRouteWrapper />,
+      }
     ],
   },
 ]);
