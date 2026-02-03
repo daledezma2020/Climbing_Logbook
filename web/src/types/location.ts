@@ -7,3 +7,12 @@ export interface Location {
   city?: string;
   state?: string;
 }
+
+export interface CreateLocationInput {
+  name: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  city?: string;
+  state?: string;
+}
