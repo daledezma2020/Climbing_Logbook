@@ -12,19 +12,19 @@ public class Location
     public string Name { get; set; } = string.Empty;
 
     [Range(-90, 90)]
-    public float Latitude { get; set; }
+    public float? Latitude { get; set; }
 
     [Range(-180, 180)]
-    public float Longitude { get; set; }
+    public float? Longitude { get; set; }
 
     [StringLength(100)]
-    public string Address { get; set; } = string.Empty;
+    public string? Address { get; set; }
 
     [StringLength(100)]
-    public string City { get; set; } = string.Empty;
+    public string? City { get; set; }
 
     [StringLength(100)]
-    public string State { get; set; } = string.Empty;
+    public string? State { get; set; }
 
     public ICollection<ClimbRoute> ClimbRoutes { get; set; } = new List<ClimbRoute>();
 }
