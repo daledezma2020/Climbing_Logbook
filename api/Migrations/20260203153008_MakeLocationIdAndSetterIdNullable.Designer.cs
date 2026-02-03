@@ -11,8 +11,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260203034908_making-address-fields-nullable")]
-    partial class makingaddressfieldsnullable
+    [Migration("20260203153008_MakeLocationIdAndSetterIdNullable")]
+    partial class MakeLocationIdAndSetterIdNullable
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
