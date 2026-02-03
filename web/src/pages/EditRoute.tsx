@@ -13,7 +13,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
-import { useClimbRoutes } from "@/hooks/climbroutes";
+import { useClimbRoutes } from "@/hooks/climbroute-hooks";
 
 const GRADE_OPTIONS = Array.from({ length: 18 }, (_, i) => `V${i}`);
 const TYPE_OPTIONS = ["Board", "Gym", "Outdoor", "Urban", "Other"];
@@ -92,7 +92,7 @@ export default function EditRoute({ id }: { id: number }) {
         Type: type || null,
         Picture: picture.trim() || null,
         Video: video.trim() || null,
-        AverageRating: 0, // Default rating
+        averageRating: 0,
       };
 
       await updateRoute(id, payload);

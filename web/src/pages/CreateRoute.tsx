@@ -1,22 +1,22 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Save } from 'lucide-react';
-import { Combobox } from '@/components/ui/combobox';
-import { useClimbRoutes } from '@/hooks/climbroutes';
+} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ArrowLeft, Save } from "lucide-react";
+import { Combobox } from "@/components/ui/combobox";
+import { useClimbRoutes } from "@/hooks/climbroute-hooks";
 
 const GRADE_OPTIONS = Array.from({ length: 18 }, (_, i) => `V${i}`);
-const TYPE_OPTIONS = ['Board', 'Gym', 'Outdoor', 'Urban', 'Other'];
+const TYPE_OPTIONS = ["Board", "Gym", "Outdoor", "Urban", "Other"];
 
 export default function CreateRoute() {
   const navigate = useNavigate();
@@ -25,29 +25,29 @@ export default function CreateRoute() {
   const [error, setError] = useState<string | null>(null);
 
   // Form state
-  const [name, setName] = useState('');
-  const [grade, setGrade] = useState('');
-  const [location, setLocation] = useState('');
-  const [setter, setSetter] = useState('');
-  const [type, setType] = useState('');
-  const [picture, setPicture] = useState('');
-  const [video, setVideo] = useState('');
+  const [name, setName] = useState("");
+  const [grade, setGrade] = useState("");
+  const [location, setLocation] = useState("");
+  const [setter, setSetter] = useState("");
+  const [type, setType] = useState("");
+  const [picture, setPicture] = useState("");
+  const [video, setVideo] = useState("");
 
   // Extract unique setters and locations from existing routes
   const uniqueSetters = Array.from(
-    new Set(routes.map(r => r.setter).filter(Boolean))
+    new Set(routes.map((r) => r.setter).filter(Boolean)),
   ).sort() as string[];
 
   const uniqueLocations = Array.from(
-    new Set(routes.map(r => r.location).filter(Boolean))
+    new Set(routes.map((r) => r.location).filter(Boolean)),
   ).sort() as string[];
 
   const setterOptions = [
-    ...uniqueSetters.map(setter => ({ value: setter, label: setter }))
+    ...uniqueSetters.map((setter) => ({ value: setter, label: setter })),
   ];
 
   const locationOptions = [
-    ...uniqueLocations.map(loc => ({ value: loc, label: loc }))
+    ...uniqueLocations.map((loc) => ({ value: loc, label: loc })),
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,15 +56,15 @@ export default function CreateRoute() {
 
     // Validation
     if (!name.trim()) {
-      setError('Name is required');
+      setError("Name is required");
       return;
     }
     if (!grade) {
-      setError('Grade is required');
+      setError("Grade is required");
       return;
     }
     if (!location.trim()) {
-      setError('Location is required');
+      setError("Location is required");
       return;
     }
 
@@ -85,9 +85,9 @@ export default function CreateRoute() {
       await createRoute(payload);
 
       // Success - navigate back to routes page
-      navigate('/routes');
+      navigate("/routes");
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create route');
+      setError(err instanceof Error ? err.message : "Failed to create route");
     } finally {
       setLoading(false);
     }
@@ -99,7 +99,7 @@ export default function CreateRoute() {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate('/routes')}
+            onClick={() => navigate("/routes")}
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -108,9 +108,7 @@ export default function CreateRoute() {
           <h1 className="text-4xl font-bold text-slate-900 tracking-tight">
             Create New Route
           </h1>
-          <p className="text-slate-600 mt-2">
-            Add a new climbing route
-          </p>
+          <p className="text-slate-600 mt-2">Add a new climbing route</p>
         </div>
 
         <Card>
@@ -234,18 +232,14 @@ export default function CreateRoute() {
 
               {/* Submit Button */}
               <div className="flex gap-3 pt-4">
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1"
-                >
+                <Button type="submit" disabled={loading} className="flex-1">
                   <Save className="mr-2 h-4 w-4" />
-                  {loading ? 'Creating...' : 'Create Route'}
+                  {loading ? "Creating..." : "Create Route"}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate('/routes')}
+                  onClick={() => navigate("/routes")}
                   disabled={loading}
                 >
                   Cancel
