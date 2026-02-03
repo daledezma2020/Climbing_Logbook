@@ -19,9 +19,6 @@ public class ClimbRoute
     public decimal AverageRating { get; set; }
 
     [StringLength(100)]
-    public string? Setter { get; set; }
-
-    [StringLength(100)]
     public string? Type { get; set; }
 
     [StringLength(500)]
@@ -30,9 +27,11 @@ public class ClimbRoute
     [StringLength(500)]
     public string? Video { get; set; }
 
-    [Required]
-    [StringLength(200)]
-    public string Location { get; set; } = string.Empty;
+    public int LocationId { get; set; }
+    public Location Location { get; set; } = null!;
+
+    public int SetterId { get; set; }
+    public Setter Setter { get; set; } = null!;
 
     public List<Comment> Comments { get; set; } = new();
 

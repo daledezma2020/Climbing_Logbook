@@ -16,9 +16,6 @@ public class ClimbRouteDto
     public decimal AverageRating { get; set; }
 
     [StringLength(100)]
-    public string? Setter { get; set; }
-
-    [StringLength(100)]
     public string? Type { get; set; }
 
     [StringLength(500)]
@@ -28,6 +25,8 @@ public class ClimbRouteDto
     public string? Video { get; set; }
 
     [Required]
-    [StringLength(200)]
-    public string Location { get; set; } = string.Empty;
+    public int LocationId { get; set; }
+
+    [Required]
+    public int SetterId { get; set; }
 }

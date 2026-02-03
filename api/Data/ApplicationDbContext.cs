@@ -10,6 +10,8 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<ClimbRoute> ClimbRoutes { get; set; } = null!;
     public DbSet<Comment> Comments { get; set; } = null!;
+    public DbSet<Location> Locations { get; set; } = null!;
+    public DbSet<Setter> Setters { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -20,5 +22,17 @@ public class ApplicationDbContext : DbContext
             .WithOne(c => c.ClimbRoute)
             .HasForeignKey(c => c.ClimbRouteId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ClimbRoute>()
+            .HasOne(r => r.Location)
+            .WithMany(l => l.ClimbRoutes)
+            .HasForeignKey(r => r.LocationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ClimbRoute>()
+            .HasOne(r => r.Setter)
+            .WithMany(s => s.ClimbRoutes)
+            .HasForeignKey(r => r.SetterId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

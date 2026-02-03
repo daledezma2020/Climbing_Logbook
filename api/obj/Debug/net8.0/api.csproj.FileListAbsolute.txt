@@ -111,3 +111,5 @@
 /Users/danledezma/Documents/coding/climbing_logbook/api/bin/Debug/net8.0/zh-Hans/Microsoft.CodeAnalysis.Workspaces.resources.dll
 /Users/danledezma/Documents/coding/climbing_logbook/api/bin/Debug/net8.0/zh-Hant/Microsoft.CodeAnalysis.Workspaces.resources.dll
 /Users/danledezma/Documents/coding/climbing_logbook/api/bin/Debug/net8.0/seeding/benchmarks.json
+/Users/danledezma/Documents/coding/climbing_logbook/api/bin/Debug/net8.0/seeding/locations.json
+/Users/danledezma/Documents/coding/climbing_logbook/api/bin/Debug/net8.0/seeding/setters.json

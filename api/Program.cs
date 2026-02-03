@@ -17,6 +17,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 // Register application services
 builder.Services.AddScoped<IClimbRouteService, ClimbRouteService>();
+builder.Services.AddScoped<ISeedingService, SeedingService>();
+builder.Services.AddScoped<ILocationService, LocationService>();
+builder.Services.AddScoped<ISetterService, SetterService>();
 
 // Add CORS
 builder.Services.AddCors(options =>
