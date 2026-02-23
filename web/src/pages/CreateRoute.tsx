@@ -17,6 +17,17 @@ import { useClimbRoutes } from "@/hooks/climbroute-hooks";
 import { useLocations } from "@/hooks/location-hooks";
 import { useSetters } from "@/hooks/setter-hooks";
 
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
 const GRADE_OPTIONS = Array.from({ length: 18 }, (_, i) => `V${i}`);
 const TYPE_OPTIONS = ["Board", "Gym", "Outdoor", "Urban", "Other"];
 
@@ -160,27 +171,82 @@ export default function CreateRoute() {
                 <Label htmlFor="location">
                   Location <span className="text-red-500">*</span>
                 </Label>
-                <Combobox
-                  options={locationOptions}
-                  value={location}
-                  onValueChange={setLocation}
-                  placeholder="Select or enter location"
-                  searchPlaceholder="Search locations..."
-                  emptyMessage="No location found."
-                />
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Combobox
+                      options={locationOptions}
+                      value={location}
+                      onValueChange={setLocation}
+                      placeholder="Select or enter location"
+                      searchPlaceholder="Search locations..."
+                      emptyMessage="No location found."
+                    />
+                  </div>
+                  <Dialog>
+                    <form>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">Add Location</Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-sm">
+                        <DialogHeader>
+                          <DialogTitle>Add Location</DialogTitle>
+                          <DialogDescription>
+                            Insert location details to add a custom location to
+                            the system.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <>TEST CONTENT</>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button>Add</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </form>
+                  </Dialog>
+                </div>
               </div>
 
               {/* Setter */}
               <div className="space-y-2">
                 <Label htmlFor="setter">Setter</Label>
-                <Combobox
-                  options={setterOptions}
-                  value={setter}
-                  onValueChange={setSetter}
-                  placeholder="Select or enter setter"
-                  searchPlaceholder="Search setters..."
-                  emptyMessage="No setter found."
-                />
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Combobox
+                      options={setterOptions}
+                      value={setter}
+                      onValueChange={setSetter}
+                      placeholder="Select or enter setter"
+                      searchPlaceholder="Search setters..."
+                      emptyMessage="No setter found."
+                    />
+                  </div>
+
+                  <Dialog>
+                    <form>
+                      <DialogTrigger asChild>
+                        <Button variant="outline">Add Setter</Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-sm">
+                        <DialogHeader>
+                          <DialogTitle>Add Setter</DialogTitle>
+                          <DialogDescription>
+                            Insert setter details to add a custom setter to the
+                            system.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <>TEST CONTENT</>
+                        <DialogFooter>
+                          <DialogClose asChild>
+                            <Button variant="outline">Cancel</Button>
+                          </DialogClose>
+                          <Button> Add</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </form>
+                  </Dialog>
+                </div>
               </div>
 
               {/* Type */}
