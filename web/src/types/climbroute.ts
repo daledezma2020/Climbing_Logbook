@@ -7,7 +7,7 @@ export interface ClimbRoute {
   type: string | null;
   picture: string | null;
   video: string | null;
-  locationId: number;
+  locationId: number | null;
   createdAt: string;
   updatedAt: string | null;
 }

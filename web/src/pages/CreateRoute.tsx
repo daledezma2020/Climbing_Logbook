@@ -69,10 +69,6 @@ export default function CreateRoute() {
       setError("Grade is required");
       return;
     }
-    if (!location.trim()) {
-      setError("Location is required");
-      return;
-    }
     if (!setter.trim()) {
       setError("Setter is required");
     }
@@ -83,8 +79,8 @@ export default function CreateRoute() {
       const payload = {
         name: name.trim(),
         grade: grade,
-        locationId: Number(location),
-        setterId: Number(setter),
+        locationId: location ? Number(location) : null,
+        setterId: setter ? Number(setter) : null,
         type: type || null,
         picture: picture.trim() || null,
         video: video.trim() || null,
@@ -168,16 +164,14 @@ export default function CreateRoute() {
 
               {/* Location */}
               <div className="space-y-2">
-                <Label htmlFor="location">
-                  Location <span className="text-red-500">*</span>
-                </Label>
+                <Label htmlFor="location">Location</Label>
                 <div className="flex gap-2 items-end">
                   <div className="flex-1">
                     <Combobox
                       options={locationOptions}
                       value={location}
                       onValueChange={setLocation}
-                      placeholder="Select or enter location"
+                      placeholder="Select location"
                       searchPlaceholder="Search locations..."
                       emptyMessage="No location found."
                     />
@@ -217,7 +211,7 @@ export default function CreateRoute() {
                       options={setterOptions}
                       value={setter}
                       onValueChange={setSetter}
-                      placeholder="Select or enter setter"
+                      placeholder="Select setter"
                       searchPlaceholder="Search setters..."
                       emptyMessage="No setter found."
                     />

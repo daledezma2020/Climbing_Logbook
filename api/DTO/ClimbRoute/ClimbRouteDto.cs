@@ -24,9 +24,7 @@ public class ClimbRouteDto
     [StringLength(500)]
     public string? Video { get; set; }
 
-    [Required]
-    public int LocationId { get; set; }
+    public int? LocationId { get; set; }
 
-    [Required]
-    public int SetterId { get; set; }
+    public int? SetterId { get; set; }
 }

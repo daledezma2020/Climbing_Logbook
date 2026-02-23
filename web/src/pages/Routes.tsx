@@ -603,12 +603,21 @@ export default function Routes() {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-slate-600">
-                            {route.locationId
-                              ? locations.find((l) => l.id === route.locationId)
-                                  ?.name || "-"
-                              : "-"}
-
-                            <MapPin className="h-4 w-4" />
+                            {(() => {
+                              const name = route.locationId
+                                ? locations.find(
+                                    (l) => l.id === route.locationId,
+                                  )?.name
+                                : null;
+                              return name ? (
+                                <>
+                                  <MapPin className="h-4 w-4" />
+                                  {name}
+                                </>
+                              ) : (
+                                "-"
+                              );
+                            })()}
                           </div>
                         </TableCell>
                         <TableCell>

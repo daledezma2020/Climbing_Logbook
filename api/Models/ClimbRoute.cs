@@ -27,11 +27,11 @@ public class ClimbRoute
     [StringLength(500)]
     public string? Video { get; set; }
 
-    public int LocationId { get; set; }
-    public Location Location { get; set; } = null!;
+    public int? LocationId { get; set; }
+    public Location? Location { get; set; }
 
-    public int SetterId { get; set; }
-    public Setter Setter { get; set; };
+    public int? SetterId { get; set; }
+    public Setter? Setter { get; set; }
 
     public List<Comment> Comments { get; set; } = new();
 
