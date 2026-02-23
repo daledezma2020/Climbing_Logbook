@@ -46,13 +46,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useLocations } from "@/hooks/location-hooks";
+import { useSetters } from "@/hooks/setter-hooks";
 
 type SortField =
   | "name"
   | "grade"
-  | "location"
+  | "locationId"
   | "averageRating"
-  | "setter"
+  | "setterId"
   | "type";
 type SortDirection = "asc" | "desc";
 
@@ -61,6 +63,17 @@ export default function Routes() {
   const location = useLocation();
   const { routes, loading, error, refetch } = useClimbRoutes();
   const hasRefetched = useRef(false);
+
+  const { locations } = useLocations();
+  const locationOptions = locations.map((loc) => ({
+    value: String(loc.id),
+    label: loc.name,
+  }));
+  const { setters } = useSetters();
+  const setterOptions = setters.map((s) => ({
+    value: String(s.id),
+    label: s.name,
+  }));
 
   // Refetch routes when returning from create page
   useEffect(() => {
@@ -75,8 +88,9 @@ export default function Routes() {
   // Filter states
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGrade, setSelectedGrade] = useState<string>("all");
-  const [selectedLocation, setSelectedLocation] = useState<string>("all");
-  const [selectedSetter, setSelectedSetter] = useState<string>("all");
+  const [selectedLocation, setSelectedLocation] =
+    useState<string>("All Locations");
+  const [selectedSetter, setSelectedSetter] = useState<string>("All Setters");
   const [selectedType, setSelectedType] = useState<string>("all");
   const [minRating, setMinRating] = useState<number>(0);
 
@@ -106,18 +120,6 @@ export default function Routes() {
     return grades;
   }, [routes]);
 
-  const uniqueLocations = useMemo(() => {
-    const locations = Array.from(new Set(routes.map((r) => r.location))).sort();
-    return locations;
-  }, [routes]);
-
-  const uniqueSetters = useMemo(() => {
-    const setters = Array.from(
-      new Set(routes.map((r) => r.setter).filter(Boolean)),
-    ).sort();
-    return setters as string[];
-  }, [routes]);
-
   const uniqueTypes = useMemo(() => {
     const types = Array.from(
       new Set(routes.map((r) => r.type).filter(Boolean)),
@@ -134,9 +136,11 @@ export default function Routes() {
       const matchesGrade =
         selectedGrade === "all" || route.grade === selectedGrade;
       const matchesLocation =
-        selectedLocation === "all" || route.location === selectedLocation;
+        selectedLocation === "All Locations" ||
+        String(route.locationId) === selectedLocation;
       const matchesSetter =
-        selectedSetter === "all" || route.setter === selectedSetter;
+        selectedSetter === "All Setters" ||
+        String(route.setterId) === selectedSetter;
       const matchesType = selectedType === "all" || route.type === selectedType;
       const matchesRating = route.averageRating >= minRating;
 
@@ -215,8 +219,8 @@ export default function Routes() {
   const clearFilters = () => {
     setSearchQuery("");
     setSelectedGrade("all");
-    setSelectedLocation("all");
-    setSelectedSetter("all");
+    setSelectedLocation("All Locations");
+    setSelectedSetter("All Setters");
     setSelectedType("all");
     setMinRating(0);
     setCurrentPage(1);
@@ -225,8 +229,8 @@ export default function Routes() {
   const hasActiveFilters =
     searchQuery ||
     selectedGrade !== "all" ||
-    selectedLocation !== "all" ||
-    selectedSetter !== "all" ||
+    selectedLocation !== "All Locations" ||
+    selectedSetter !== "All Setters" ||
     selectedType !== "all" ||
     minRating > 0;
 
@@ -408,13 +412,7 @@ export default function Routes() {
                     Location
                   </label>
                   <Combobox
-                    options={[
-                      { value: "all", label: "All locations" },
-                      ...uniqueLocations.map((loc) => ({
-                        value: loc,
-                        label: loc,
-                      })),
-                    ]}
+                    options={locationOptions}
                     value={selectedLocation}
                     onValueChange={(value) => {
                       setSelectedLocation(value);
@@ -432,13 +430,7 @@ export default function Routes() {
                     Setter
                   </label>
                   <Combobox
-                    options={[
-                      { value: "all", label: "All setters" },
-                      ...uniqueSetters.map((setter) => ({
-                        value: setter,
-                        label: setter,
-                      })),
-                    ]}
+                    options={setterOptions}
                     value={selectedSetter}
                     onValueChange={(value) => {
                       setSelectedSetter(value);
@@ -538,11 +530,11 @@ export default function Routes() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleSort("setter")}
+                        onClick={() => handleSort("setterId")}
                         className="hover:bg-slate-100"
                       >
                         Setter
-                        {getSortIcon("setter")}
+                        {getSortIcon("setterId")}
                       </Button>
                     </TableHead>
                     <TableHead className="px-0">
@@ -560,11 +552,11 @@ export default function Routes() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleSort("location")}
+                        onClick={() => handleSort("locationId")}
                         className="hover:bg-slate-100"
                       >
                         Location
-                        {getSortIcon("location")}
+                        {getSortIcon("locationId")}
                       </Button>
                     </TableHead>
                     <TableHead className="px-0">
@@ -603,15 +595,20 @@ export default function Routes() {
                           <Badge variant="secondary">{route.grade}</Badge>
                         </TableCell>
                         <TableCell className="text-slate-600">
-                          {route.setter || "-"}
+                          {setters.find((s) => s.id === route.setterId)?.name ||
+                            "-"}
                         </TableCell>
                         <TableCell className="text-slate-600">
                           {route.type || "-"}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-slate-600">
+                            {route.locationId
+                              ? locations.find((l) => l.id === route.locationId)
+                                  ?.name || "-"
+                              : "-"}
+
                             <MapPin className="h-4 w-4" />
-                            {route.location}
                           </div>
                         </TableCell>
                         <TableCell>

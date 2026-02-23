@@ -31,7 +31,7 @@ public class ClimbRoute
     public Location Location { get; set; } = null!;
 
     public int SetterId { get; set; }
-    public Setter Setter { get; set; } = null!;
+    public Setter Setter { get; set; };
 
     public List<Comment> Comments { get; set; } = new();
 

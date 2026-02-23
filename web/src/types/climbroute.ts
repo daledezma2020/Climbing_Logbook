@@ -3,11 +3,11 @@ export interface ClimbRoute {
   name: string;
   grade: string;
   averageRating: number;
-  setter: string | null;
+  setterId: number | null;
   type: string | null;
   picture: string | null;
   video: string | null;
-  location: string;
+  locationId: number;
   createdAt: string;
   updatedAt: string | null;
 }

@@ -14,6 +14,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Save } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { useClimbRoutes } from "@/hooks/climbroute-hooks";
+import { useLocations } from "@/hooks/location-hooks";
+import { useSetters } from "@/hooks/setter-hooks";
 
 const GRADE_OPTIONS = Array.from({ length: 18 }, (_, i) => `V${i}`);
 const TYPE_OPTIONS = ["Board", "Gym", "Outdoor", "Urban", "Other"];
@@ -21,6 +23,16 @@ const TYPE_OPTIONS = ["Board", "Gym", "Outdoor", "Urban", "Other"];
 export default function CreateRoute() {
   const navigate = useNavigate();
   const { routes, createRoute } = useClimbRoutes();
+  const { locations } = useLocations();
+  const locationOptions = locations.map((loc) => ({
+    value: String(loc.id),
+    label: loc.name,
+  }));
+  const { setters } = useSetters();
+  const setterOptions = setters.map((s) => ({
+    value: String(s.id),
+    label: s.name,
+  }));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,23 +44,6 @@ export default function CreateRoute() {
   const [type, setType] = useState("");
   const [picture, setPicture] = useState("");
   const [video, setVideo] = useState("");
-
-  // Extract unique setters and locations from existing routes
-  const uniqueSetters = Array.from(
-    new Set(routes.map((r) => r.setter).filter(Boolean)),
-  ).sort() as string[];
-
-  const uniqueLocations = Array.from(
-    new Set(routes.map((r) => r.location).filter(Boolean)),
-  ).sort() as string[];
-
-  const setterOptions = [
-    ...uniqueSetters.map((setter) => ({ value: setter, label: setter })),
-  ];
-
-  const locationOptions = [
-    ...uniqueLocations.map((loc) => ({ value: loc, label: loc })),
-  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,19 +62,22 @@ export default function CreateRoute() {
       setError("Location is required");
       return;
     }
+    if (!setter.trim()) {
+      setError("Setter is required");
+    }
 
     try {
       setLoading(true);
 
       const payload = {
-        Name: name.trim(),
-        Grade: grade,
-        Location: location.trim(),
-        Setter: setter.trim() || null,
-        Type: type || null,
-        Picture: picture.trim() || null,
-        Video: video.trim() || null,
-        AverageRating: 0, // Default rating
+        name: name.trim(),
+        grade: grade,
+        locationId: Number(location),
+        setterId: Number(setter),
+        type: type || null,
+        picture: picture.trim() || null,
+        video: video.trim() || null,
+        averageRating: 0,
       };
 
       await createRoute(payload);
@@ -169,7 +167,6 @@ export default function CreateRoute() {
                   placeholder="Select or enter location"
                   searchPlaceholder="Search locations..."
                   emptyMessage="No location found."
-                  allowCustomValue
                 />
               </div>
 
@@ -183,7 +180,6 @@ export default function CreateRoute() {
                   placeholder="Select or enter setter"
                   searchPlaceholder="Search setters..."
                   emptyMessage="No setter found."
-                  allowCustomValue
                 />
               </div>
 
