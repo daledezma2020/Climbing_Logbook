@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { CreateClimbRouteInput } from "@/types/climbroute";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import { Combobox } from "@/components/ui/combobox";
 import { useLocations } from "@/hooks/location-hooks";
 import { useSetters } from "@/hooks/setter-hooks";
+import { useClimbRoutes } from "@/hooks/climbroute-hooks";
 
 import {
   Dialog,
@@ -32,6 +33,7 @@ const GRADE_OPTIONS = Array.from({ length: 18 }, (_, i) => `V${i}`);
 const TYPE_OPTIONS = ["Board", "Gym", "Outdoor", "Urban", "Other"];
 
 interface RouteFormProps {
+  id?: number;
   title: string;
   description: string;
   handleSave: (payload: CreateClimbRouteInput) => Promise<void>;
@@ -39,6 +41,7 @@ interface RouteFormProps {
   error: string | null;
 }
 const RouteForm: React.FC<RouteFormProps> = ({
+  id,
   title,
   description,
   handleSave,
@@ -65,6 +68,21 @@ const RouteForm: React.FC<RouteFormProps> = ({
   const [type, setType] = useState("");
   const [picture, setPicture] = useState("");
   const [video, setVideo] = useState("");
+
+  const { routes } = useClimbRoutes();
+
+  const route = routes.find((r) => r.id === id);
+  useEffect(() => {
+    if (route) {
+      setName(route.name || "");
+      setGrade(route.grade || "");
+      setLocation(String(route.locationId) || "");
+      setSetter(String(route.setterId) || "");
+      setType(route.type || "");
+      setPicture(route.picture || "");
+      setVideo(route.video || "");
+    }
+  }, [route?.id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -277,7 +295,7 @@ const RouteForm: React.FC<RouteFormProps> = ({
               <div className="flex gap-3 pt-4">
                 <Button type="submit" disabled={loading} className="flex-1">
                   <Save className="mr-2 h-4 w-4" />
-                  {loading ? "Creating..." : "Create Route"}
+                  {loading ? "Saving..." : "Submit"}
                 </Button>
                 <Button
                   type="button"

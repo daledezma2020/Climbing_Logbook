@@ -50,7 +50,9 @@ public class ClimbRouteService : IClimbRouteService
         existingClimbRoute.AverageRating = climbRoute.AverageRating;
         existingClimbRoute.Picture = climbRoute.Picture;
         existingClimbRoute.Video = climbRoute.Video;
-        existingClimbRoute.Location = climbRoute.Location;
+        existingClimbRoute.Type = climbRoute.Type;         
+        existingClimbRoute.LocationId = climbRoute.LocationId; 
+        existingClimbRoute.SetterId = climbRoute.SetterId;   
         existingClimbRoute.UpdatedAt = DateTime.UtcNow;
 
         try
