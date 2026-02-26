@@ -9,6 +9,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const AddSetterModal = () => (
   <Dialog>
@@ -23,7 +25,17 @@ const AddSetterModal = () => (
             Insert setter details to add a custom setter to the system.
           </DialogDescription>
         </DialogHeader>
-        <>TEST CONTENT</>
+        <div className="space-y-2">
+          <Label htmlFor="name">
+            Name <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id="name"
+            placeholder="Enter setter name"
+            maxLength={100}
+            required
+          />
+        </div>
         <DialogFooter>
           <DialogClose asChild>
             <Button variant="outline">Cancel</Button>
