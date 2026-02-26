@@ -17,17 +17,8 @@ import { Combobox } from "@/components/ui/combobox";
 import { useLocations } from "@/hooks/location-hooks";
 import { useSetters } from "@/hooks/setter-hooks";
 import { useClimbRoutes } from "@/hooks/climbroute-hooks";
-
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import AddLocationModal from "./AddLocationModal";
+import AddSetterModal from "./AddSetterModal";
 
 const GRADE_OPTIONS = Array.from({ length: 18 }, (_, i) => `V${i}`);
 const TYPE_OPTIONS = ["Board", "Gym", "Outdoor", "Urban", "Other"];
@@ -181,29 +172,7 @@ const RouteForm: React.FC<RouteFormProps> = ({
                       emptyMessage="No location found."
                     />
                   </div>
-                  <Dialog>
-                    <form>
-                      <DialogTrigger asChild>
-                        <Button variant="outline">Add Location</Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-sm">
-                        <DialogHeader>
-                          <DialogTitle>Add Location</DialogTitle>
-                          <DialogDescription>
-                            Insert location details to add a custom location to
-                            the system.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <>TEST CONTENT</>
-                        <DialogFooter>
-                          <DialogClose asChild>
-                            <Button variant="outline">Cancel</Button>
-                          </DialogClose>
-                          <Button>Add</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </form>
-                  </Dialog>
+                  <AddLocationModal />
                 </div>
               </div>
 
@@ -222,29 +191,7 @@ const RouteForm: React.FC<RouteFormProps> = ({
                     />
                   </div>
 
-                  <Dialog>
-                    <form>
-                      <DialogTrigger asChild>
-                        <Button variant="outline">Add Setter</Button>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-sm">
-                        <DialogHeader>
-                          <DialogTitle>Add Setter</DialogTitle>
-                          <DialogDescription>
-                            Insert setter details to add a custom setter to the
-                            system.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <>TEST CONTENT</>
-                        <DialogFooter>
-                          <DialogClose asChild>
-                            <Button variant="outline">Cancel</Button>
-                          </DialogClose>
-                          <Button> Add</Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </form>
-                  </Dialog>
+                  <AddSetterModal />
                 </div>
               </div>
 
