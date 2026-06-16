@@ -21,10 +21,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register application services
-builder.Services.AddScoped<IClimbRouteService, ClimbRouteService>();
 builder.Services.AddScoped<ISeedingService, SeedingService>();
-builder.Services.AddScoped<ILocationService, LocationService>();
 builder.Services.AddScoped<ISetterService, SetterService>();
+builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddHttpClient<IOpenBetaClient, OpenBetaClient>();
+builder.Services.AddHttpClient<IOsmClient, OsmClient>();
 
 // Add CORS
 builder.Services.AddCors(options =>

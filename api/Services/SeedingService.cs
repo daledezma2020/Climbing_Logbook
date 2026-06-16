@@ -1,22 +1,20 @@
 using api.Interfaces;
 using api.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 
 namespace api.Services;
 
 public class SeedingService : ISeedingService
 {
-    private readonly IClimbRouteService _climbRouteService;
-    private readonly ILocationService _locationService;
+    private readonly ApplicationDbContext _context;
     private readonly ISetterService _setterService;
 
     public SeedingService(
-        IClimbRouteService climbRouteService,
-        ILocationService locationService,
+        ApplicationDbContext context,
         ISetterService setterService)
     {
-        _climbRouteService = climbRouteService;
-        _locationService = locationService;
+        _context = context;
         _setterService = setterService;
     }
 
@@ -45,9 +43,11 @@ public class SeedingService : ISeedingService
 
             if (!string.IsNullOrWhiteSpace(name))
             {
-                var location = new Location { Name = name };
-                await _locationService.CreateLocationAsync(location);
-                createdCount++;
+                var board = await EnsureBoardConfigurationAsync(locationElement.GetProperty("id").GetInt32(), name);
+                if (board.CreatedAt > DateTime.UtcNow.AddSeconds(-10))
+                {
+                    createdCount++;
+                }
             }
         }
 
@@ -106,40 +106,53 @@ public class SeedingService : ISeedingService
             throw new InvalidOperationException("No benchmarks found in the file");
         }
 
-        var moonboardRoutes = new List<ClimbRoute>();
+        var createdCount = 0;
 
         foreach (var benchmark in benchmarksArray.EnumerateArray())
         {
+            var moonboardId = benchmark.GetProperty("id").GetInt32();
             var name = benchmark.GetProperty("name").GetString() ?? "Unknown";
             var grade = benchmark.GetProperty("grade").GetInt32();
             var mbType = benchmark.GetProperty("mb_type").GetInt32();
             var setterName = benchmark.GetProperty("setter").GetString();
 
-            // Map mb_type to location name
-            var locationName = MapMoonboardType(mbType);
-            var location = await _locationService.GetLocationByNameAsync(locationName);
+            var boardName = MapMoonboardType(mbType);
+            var board = await EnsureBoardConfigurationAsync(mbType, boardName);
+            var externalId = moonboardId.ToString();
+            if (await _context.ClimbExternalReferences.AnyAsync(r =>
+                r.Provider == ExternalProvider.MoonBoardSeed && r.ExternalId == externalId))
+            {
+                continue;
+            }
 
-            // Get setter by name
             Setter? setter = null;
             if (!string.IsNullOrWhiteSpace(setterName))
             {
                 setter = await _setterService.GetSetterByNameAsync(setterName);
             }
 
-            var route = new ClimbRoute
+            var climb = new Climb
             {
                 Name = name,
                 Grade = $"V{grade}",
-                LocationId = location?.Id ?? 1,
-                SetterId = setter?.Id ?? 1,
-                Type = "Board",
-                AverageRating = 5
+                GradeSystem = GradeSystem.VScale,
+                Discipline = ClimbDiscipline.Bouldering,
+                BoardConfigurationId = board.Id,
+                SetterId = setter?.Id
             };
 
-            moonboardRoutes.Add(route);
+            _context.Climbs.Add(climb);
+            _context.ClimbExternalReferences.Add(new ClimbExternalReference
+            {
+                Climb = climb,
+                Provider = ExternalProvider.MoonBoardSeed,
+                ExternalId = externalId
+            });
+            createdCount++;
         }
 
-        return await _climbRouteService.SeedMoonboardRoutesAsync(moonboardRoutes);
+        await _context.SaveChangesAsync();
+        return createdCount;
     }
 
     public async Task<(int locations, int setters, int routes)> SeedMoonboardDataAsync()
@@ -163,5 +176,35 @@ public class SeedingService : ISeedingService
             5 => "Mini Moonboard 2025",
             _ => "Unknown Moonboard" // Default fallback
         };
+    }
+
+    private async Task<BoardConfiguration> EnsureBoardConfigurationAsync(int moonboardType, string name)
+    {
+        var externalId = $"board-{moonboardType}";
+        var reference = await _context.ClimbExternalReferences
+            .FirstOrDefaultAsync(r => r.Provider == ExternalProvider.MoonBoardSeed && r.ExternalId == externalId);
+
+        var existing = await _context.BoardConfigurations
+            .FirstOrDefaultAsync(b => b.Name == name);
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        var board = new BoardConfiguration
+        {
+            Name = name,
+            Manufacturer = "MoonBoard",
+            Year = ExtractYear(name)
+        };
+        _context.BoardConfigurations.Add(board);
+        await _context.SaveChangesAsync();
+        return board;
+    }
+
+    private static int ExtractYear(string name)
+    {
+        var digits = new string(name.Where(char.IsDigit).ToArray());
+        return int.TryParse(digits, out var year) ? year : DateTime.UtcNow.Year;
     }
 }

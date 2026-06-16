@@ -340,7 +340,7 @@ export default function Routes() {
 
         <div className="flex gap-6">
           {/* Filters Sidebar */}
-          <aside className="w-72 flex-shrink-0">
+          <aside className="w-72 shrink-0">
             <Card>
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between">
