@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Mountain, Home as HomeIcon } from "lucide-react";
+import { Mountain, Home as HomeIcon, BookOpen } from "lucide-react";
 
 export default function Navbar() {
   const location = useLocation();
@@ -32,13 +32,23 @@ export default function Navbar() {
               </Button>
             </Link>
 
-            <Link to="/routes">
+            <Link to="/logbook">
               <Button
-                variant={isActive("/routes") ? "default" : "ghost"}
+                variant={isActive("/logbook") ? "default" : "ghost"}
+                className="gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                Logbook
+              </Button>
+            </Link>
+
+            <Link to="/climbs">
+              <Button
+                variant={isActive("/climbs") ? "default" : "ghost"}
                 className="gap-2"
               >
                 <Mountain className="h-4 w-4" />
-                Routes
+                Climbs
               </Button>
             </Link>
           </div>

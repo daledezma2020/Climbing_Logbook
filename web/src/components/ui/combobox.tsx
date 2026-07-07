@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Check, ChevronsUpDown } from "lucide-react"
+import * as React from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
 
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -12,22 +12,22 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@/components/ui/command"
+} from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover"
+} from "@/components/ui/popover";
 
 interface ComboboxProps {
-  options: { value: string; label: string }[]
-  value: string
-  onValueChange: (value: string) => void
-  placeholder?: string
-  emptyMessage?: string
-  searchPlaceholder?: string
-  className?: string
-  allowCustomValue?: boolean
+  options: { value: string; label: string }[];
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  emptyMessage?: string;
+  searchPlaceholder?: string;
+  className?: string;
+  allowCustomValue?: boolean;
 }
 
 export function Combobox({
@@ -40,21 +40,37 @@ export function Combobox({
   className,
   allowCustomValue = false,
 }: ComboboxProps) {
-  const [open, setOpen] = React.useState(false)
-  const [searchValue, setSearchValue] = React.useState("")
+  const [open, setOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState("");
 
   // Find the label for the current value
-  const selectedOption = options.find((option) => option.value === value)
-  const displayValue = selectedOption ? selectedOption.label : (value || placeholder)
+  const selectedOption = options.find((option) => option.value === value);
+  const displayValue = selectedOption
+    ? selectedOption.label
+    : value || placeholder;
+  const customValue = searchValue.trim();
+  const showCustomValue =
+    allowCustomValue &&
+    customValue.length > 0 &&
+    !options.some(
+      (option) =>
+        option.value.toLowerCase() === customValue.toLowerCase() ||
+        option.label.toLowerCase() === customValue.toLowerCase(),
+    );
+
+  const chooseCustomValue = () => {
+    if (!customValue) return;
+    onValueChange(customValue);
+    setSearchValue("");
+    setOpen(false);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (allowCustomValue && e.key === "Enter" && searchValue) {
-      e.preventDefault()
-      onValueChange(searchValue)
-      setSearchValue("")
-      setOpen(false)
+    if (showCustomValue && e.key === "Enter") {
+      e.preventDefault();
+      chooseCustomValue();
     }
-  }
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -79,9 +95,9 @@ export function Combobox({
           />
           <CommandList>
             <CommandEmpty>
-              {allowCustomValue && searchValue ? (
+              {showCustomValue ? (
                 <div className="px-2 py-1.5 text-sm">
-                  Press Enter to add "{searchValue}"
+                  Press Enter to use "{customValue}"
                 </div>
               ) : (
                 emptyMessage
@@ -92,25 +108,32 @@ export function Combobox({
                 <CommandItem
                   key={option.value}
                   value={option.value}
+                  keywords={[option.label]}
                   onSelect={(currentValue) => {
-                    onValueChange(currentValue === value ? "" : currentValue)
-                    setSearchValue("")
-                    setOpen(false)
+                    onValueChange(currentValue === value ? "" : currentValue);
+                    setSearchValue("");
+                    setOpen(false);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === option.value ? "opacity-100" : "opacity-0"
+                      value === option.value ? "opacity-100" : "opacity-0",
                     )}
                   />
                   {option.label}
                 </CommandItem>
               ))}
+              {showCustomValue && (
+                <CommandItem value={customValue} onSelect={chooseCustomValue}>
+                  <Check className="mr-2 h-4 w-4 opacity-0" />
+                  Use "{customValue}"
+                </CommandItem>
+              )}
             </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
-  )
+  );
 }

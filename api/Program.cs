@@ -1,12 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using api.Interfaces;
 using api.Services;
+using System.Text.Json;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+    });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -16,7 +22,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register application services
-builder.Services.AddScoped<IClimbRouteService, ClimbRouteService>();
+builder.Services.AddScoped<ISeedingService, SeedingService>();
+builder.Services.AddScoped<ISetterService, SetterService>();
+builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddHttpClient<IOpenBetaClient, OpenBetaClient>();
+builder.Services.AddHttpClient<IOsmClient, OsmClient>();
 
 // Add CORS
 builder.Services.AddCors(options =>
