@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Combobox } from "@/components/ui/combobox";
@@ -58,6 +59,7 @@ export default function ManualClimbForm({
   initialName = "",
   initialPlaceId = null,
 }: ManualClimbFormProps) {
+  const { getAccessTokenSilently } = useAuth0();
   const { places } = usePlaces();
   const { boards } = useBoardConfigurations();
   const { setters } = useSetters();
@@ -172,7 +174,8 @@ export default function ManualClimbForm({
     try {
       setSubmitting(true);
       setError(null);
-      const climb = await createManualClimb(payload);
+      const accessToken = await getAccessTokenSilently();
+      const climb = await createManualClimb(payload, accessToken);
       onCreated(climb);
     } catch (err) {
       setError(

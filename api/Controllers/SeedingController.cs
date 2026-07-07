@@ -9,16 +9,26 @@ public class SeedingController : ControllerBase
 {
     private readonly ISeedingService _seedingService;
     private readonly ILogger<SeedingController> _logger;
+    private readonly IWebHostEnvironment _environment;
 
-    public SeedingController(ISeedingService seedingService, ILogger<SeedingController> logger)
+    public SeedingController(
+        ISeedingService seedingService,
+        ILogger<SeedingController> logger,
+        IWebHostEnvironment environment)
     {
         _seedingService = seedingService;
         _logger = logger;
+        _environment = environment;
     }
 
     [HttpPost("moonboard")]
     public async Task<ActionResult> SeedMoonboardData()
     {
+        if (!_environment.IsDevelopment())
+        {
+            return NotFound();
+        }
+
         try
         {
             var (locations, setters, routes) = await _seedingService.SeedMoonboardDataAsync();
@@ -52,6 +62,11 @@ public class SeedingController : ControllerBase
     [HttpPost("locations")]
     public async Task<ActionResult> SeedMBLocations()
     {
+        if (!_environment.IsDevelopment())
+        {
+            return NotFound();
+        }
+
         try
         {
             var count = await _seedingService.SeedMBLocationsAsync();
@@ -77,6 +92,11 @@ public class SeedingController : ControllerBase
     [HttpPost("setters")]
     public async Task<ActionResult> SeedMBSetters()
     {
+        if (!_environment.IsDevelopment())
+        {
+            return NotFound();
+        }
+
         try
         {
             var count = await _seedingService.SeedMBSettersAsync();

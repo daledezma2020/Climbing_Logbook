@@ -1,5 +1,6 @@
 using api.DTO;
 using api.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers;
@@ -21,6 +22,7 @@ public class LogEntriesController : ControllerBase
         return Ok(await _catalogService.GetLogEntriesAsync());
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<LogEntryDto>> CreateLogEntry(CreateLogEntryDto dto)
     {

@@ -1,5 +1,6 @@
 using api.DTO;
 using api.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers;
@@ -21,6 +22,7 @@ public class PlacesController : ControllerBase
         return Ok(await _catalogService.GetPlacesAsync());
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<PlaceSummaryDto>> CreatePlace(CreatePlaceDto dto)
     {
@@ -28,6 +30,7 @@ public class PlacesController : ControllerBase
         return CreatedAtAction(nameof(GetPlaces), new { id = place.Id }, place);
     }
 
+    [Authorize]
     [HttpPost("osm/{osmType}/{osmId}/import")]
     public async Task<ActionResult<PlaceSummaryDto>> ImportOsmPlace(string osmType, string osmId)
     {

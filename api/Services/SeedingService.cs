@@ -89,7 +89,7 @@ public class SeedingService : ISeedingService
     }
 
     public async Task<int> SeedMBRoutesAsync()
-    {   
+    {
         var benchmarksPath = Path.Combine(Directory.GetCurrentDirectory(), "seeding", "benchmarks.json");
 
         if (!File.Exists(benchmarksPath))
@@ -180,10 +180,6 @@ public class SeedingService : ISeedingService
 
     private async Task<BoardConfiguration> EnsureBoardConfigurationAsync(int moonboardType, string name)
     {
-        var externalId = $"board-{moonboardType}";
-        var reference = await _context.ClimbExternalReferences
-            .FirstOrDefaultAsync(r => r.Provider == ExternalProvider.MoonBoardSeed && r.ExternalId == externalId);
-
         var existing = await _context.BoardConfigurations
             .FirstOrDefaultAsync(b => b.Name == name);
         if (existing != null)

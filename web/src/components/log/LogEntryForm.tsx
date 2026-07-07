@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ export default function LogEntryForm({
   onSubmitted,
   onCancel,
 }: LogEntryFormProps) {
+  const { getAccessTokenSilently } = useAuth0();
   const isBoardClimb = climb.boardConfigurationId != null;
   const { places } = usePlaces();
 
@@ -51,14 +53,18 @@ export default function LogEntryForm({
     try {
       setSubmitting(true);
       setError(null);
-      await createLogEntry({
-        climbId: climb.id,
-        placeId: isBoardClimb && placeId ? Number(placeId) : null,
-        occurredAt: new Date(occurredAt).toISOString(),
-        status,
-        rating: rating > 0 ? rating : null,
-        notes: notes.trim() || null,
-      });
+      const accessToken = await getAccessTokenSilently();
+      await createLogEntry(
+        {
+          climbId: climb.id,
+          placeId: isBoardClimb && placeId ? Number(placeId) : null,
+          occurredAt: new Date(occurredAt).toISOString(),
+          status,
+          rating: rating > 0 ? rating : null,
+          notes: notes.trim() || null,
+        },
+        accessToken,
+      );
       onSubmitted();
     } catch (err) {
       setError(

@@ -1,18 +1,39 @@
-using Microsoft.EntityFrameworkCore;
 using api.Interfaces;
 using api.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text.Json;
-
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+var auth0Domain = $"https://{builder.Configuration["Auth0:Domain"]}/";
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
 // Add services to the container.
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-        options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.Authority = auth0Domain;
+        options.Audience = builder.Configuration["Auth0:Audience"];
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            NameClaimType = ClaimTypes.NameIdentifier
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -51,6 +72,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp"); // Enable CORS
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
@@ -63,24 +86,19 @@ using (var scope = app.Services.CreateScope())
         var pendingMigrations = db.Database.GetPendingMigrations();
         if (pendingMigrations.Any())
         {
-            Console.WriteLine($"📦 Applying {pendingMigrations.Count()} pending migration(s)...");
+            Console.WriteLine($"Applying {pendingMigrations.Count()} pending migration(s)...");
             db.Database.Migrate();
-            Console.WriteLine("✅ Migrations applied successfully!");
+            Console.WriteLine("Migrations applied successfully!");
         }
         else
         {
-            Console.WriteLine("✅ Database is up to date!");
+            Console.WriteLine("Database is up to date!");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Database migration failed: {ex.Message}");
+        Console.WriteLine($"Database migration failed: {ex.Message}");
     }
 }
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

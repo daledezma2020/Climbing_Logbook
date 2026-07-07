@@ -1,5 +1,6 @@
 using api.DTO;
 using api.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers;
@@ -28,6 +29,7 @@ public class ClimbsController : ControllerBase
         return climb == null ? NotFound() : Ok(climb);
     }
 
+    [Authorize]
     [HttpPost("manual")]
     public async Task<ActionResult<ClimbSummaryDto>> CreateManualClimb(CreateManualClimbDto dto)
     {
@@ -35,6 +37,7 @@ public class ClimbsController : ControllerBase
         return CreatedAtAction(nameof(GetClimb), new { id = climb.Id }, climb);
     }
 
+    [Authorize]
     [HttpPost("openbeta/{uuid}/import")]
     public async Task<ActionResult<ClimbSummaryDto>> ImportOpenBetaClimb(string uuid)
     {
@@ -42,6 +45,7 @@ public class ClimbsController : ControllerBase
         return climb == null ? BadRequest("OpenBeta climb could not be imported.") : Ok(climb);
     }
 
+    [Authorize]
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> DeleteClimb(int id)
     {

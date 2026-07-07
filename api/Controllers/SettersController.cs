@@ -1,5 +1,6 @@
 using api.Interfaces;
 using api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers;
@@ -50,6 +51,7 @@ public class SettersController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<Setter>> CreateSetter(Setter setter)
     {
@@ -65,6 +67,7 @@ public class SettersController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<ActionResult<Setter>> UpdateSetter(int id, Setter setter)
     {
@@ -84,6 +87,7 @@ public class SettersController : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteSetter(int id)
     {

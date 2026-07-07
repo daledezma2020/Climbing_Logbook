@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { apiFetch } from "@/lib/api";
 import type {
   BoardConfiguration,
@@ -11,6 +12,8 @@ import type {
 } from "@/types/catalog";
 
 export function useClimbs() {
+  const { getAccessTokenSilently, loginWithRedirect, isAuthenticated } =
+    useAuth0();
   const [climbs, setClimbs] = useState<Climb[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -33,10 +36,16 @@ export function useClimbs() {
 
   const deleteClimb = useCallback(
     async (id: number) => {
-      await apiFetch<void>(`/climbs/${id}`, { method: "DELETE" });
+      if (!isAuthenticated) {
+        await loginWithRedirect();
+        return;
+      }
+
+      const accessToken = await getAccessTokenSilently();
+      await apiFetch<void>(`/climbs/${id}`, { method: "DELETE", accessToken });
       await fetchClimbs();
     },
-    [fetchClimbs],
+    [fetchClimbs, getAccessTokenSilently, isAuthenticated, loginWithRedirect],
   );
 
   return { climbs, loading, error, refetch: fetchClimbs, deleteClimb };
@@ -142,26 +151,42 @@ export function useSearch() {
   return { results, loading, error, search, reset };
 }
 
-export function createLogEntry(payload: CreateLogEntryInput) {
+export function createLogEntry(
+  payload: CreateLogEntryInput,
+  accessToken: string,
+) {
   return apiFetch<LogEntry>("/logentries", {
     method: "POST",
+    accessToken,
     body: JSON.stringify(payload),
   });
 }
 
-export function createManualClimb(payload: CreateManualClimbInput) {
+export function createManualClimb(
+  payload: CreateManualClimbInput,
+  accessToken: string,
+) {
   return apiFetch<Climb>("/climbs/manual", {
     method: "POST",
+    accessToken,
     body: JSON.stringify(payload),
   });
 }
 
-export function importOpenBetaClimb(uuid: string) {
-  return apiFetch<Climb>(`/climbs/openbeta/${uuid}/import`, { method: "POST" });
+export function importOpenBetaClimb(uuid: string, accessToken: string) {
+  return apiFetch<Climb>(`/climbs/openbeta/${uuid}/import`, {
+    method: "POST",
+    accessToken,
+  });
 }
 
-export function importOsmPlace(osmType: string, osmId: string) {
+export function importOsmPlace(
+  osmType: string,
+  osmId: string,
+  accessToken: string,
+) {
   return apiFetch<Place>(`/places/osm/${osmType}/${osmId}/import`, {
     method: "POST",
+    accessToken,
   });
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Search, Loader2, Plus, ArrowLeft, Check } from "lucide-react";
+import { Search, Loader2, Plus, ArrowLeft, Check, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,6 +29,12 @@ export default function LogClimb() {
   const navigate = useNavigate();
   const location = useLocation();
   const { results, loading, error, search } = useSearch();
+  const {
+    getAccessTokenSilently,
+    loginWithRedirect,
+    isAuthenticated,
+    isLoading,
+  } = useAuth0();
 
   const [step, setStep] = useState<Step>("search");
   const [query, setQuery] = useState("");
@@ -71,7 +78,8 @@ export default function LogClimb() {
       if (result.localId) {
         goToLog(await apiFetch<Climb>(`/climbs/${result.localId}`));
       } else if (result.externalId) {
-        goToLog(await importOpenBetaClimb(result.externalId));
+        const accessToken = await getAccessTokenSilently();
+        goToLog(await importOpenBetaClimb(result.externalId, accessToken));
       }
     } catch (err) {
       setResolveError(
@@ -91,7 +99,8 @@ export default function LogClimb() {
       let placeId = result.localId ?? null;
       if (!placeId && result.externalId) {
         const [osmType, osmId] = result.externalId.split("/");
-        const place = await importOsmPlace(osmType, osmId);
+        const accessToken = await getAccessTokenSilently();
+        const place = await importOsmPlace(osmType, osmId, accessToken);
         placeId = place.id;
       }
       setManualSeed({ placeId });
@@ -106,6 +115,32 @@ export default function LogClimb() {
       setResolving(null);
     }
   };
+
+  if (isLoading) {
+    return (
+      <Shell title="Log a climb" subtitle="Checking sign-in status">
+        <div className="rounded-lg border bg-white p-6 shadow-sm text-slate-600">
+          Loading...
+        </div>
+      </Shell>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <Shell
+        title="Log a climb"
+        subtitle="Sign in before creating climbs or logbook entries"
+      >
+        <div className="rounded-lg border bg-white p-6 shadow-sm">
+          <Button className="gap-2" onClick={() => loginWithRedirect()}>
+            <LogIn className="h-4 w-4" />
+            Sign in to log a climb
+          </Button>
+        </div>
+      </Shell>
+    );
+  }
 
   if (step === "log" && selectedClimb) {
     return (

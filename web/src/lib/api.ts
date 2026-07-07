@@ -1,4 +1,10 @@
-export const API_BASE = "http://localhost:5050/api";
+export const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5050";
+export const API_BASE = `${API_BASE_URL}/api`;
+
+type ApiFetchOptions = RequestInit & {
+  accessToken?: string;
+};
 
 function formatApiError(status: number, errorData: unknown): string {
   if (typeof errorData === "string" && errorData.trim()) {
@@ -34,13 +40,24 @@ function formatApiError(status: number, errorData: unknown): string {
 
 export async function apiFetch<T>(
   path: string,
-  options?: RequestInit,
+  options: ApiFetchOptions = {},
 ): Promise<T> {
+  const { accessToken, headers: optionHeaders, ...requestOptions } = options;
+  const headers = new Headers(optionHeaders);
+
+  if (!headers.has("Content-Type") && requestOptions.body) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  if (accessToken) {
+    headers.set("Authorization", `Bearer ${accessToken}`);
+  }
+
   let response: Response;
   try {
     response = await fetch(`${API_BASE}${path}`, {
-      headers: { "Content-Type": "application/json" },
-      ...options,
+      ...requestOptions,
+      headers,
     });
   } catch (err) {
     throw new Error(
