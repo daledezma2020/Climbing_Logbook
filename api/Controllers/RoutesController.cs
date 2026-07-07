@@ -1,6 +1,7 @@
 using api.DTO.ClimbRoute;
 using api.Interfaces;
 using api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
 
@@ -58,6 +59,7 @@ public class RoutesController : ControllerBase
     }
 
     // POST: api/routes
+    [Authorize]
     [HttpPost]
     public async Task<ActionResult<ClimbRoute>> CreateRoute([FromBody] ClimbRouteDto dto)
     {
@@ -89,6 +91,7 @@ public class RoutesController : ControllerBase
     }
 
     // PUT: api/routes/5
+    [Authorize]
     [HttpPut("{id}")]
     public async Task<ActionResult<ClimbRoute>> UpdateRoute(int id, [FromBody] ClimbRouteDto dto)
     {
@@ -126,6 +129,7 @@ public class RoutesController : ControllerBase
     }
 
     // DELETE: api/routes/5
+    [Authorize]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteRoute(int id)
     {
@@ -148,6 +152,7 @@ public class RoutesController : ControllerBase
     }
 
     // POST: api/routes/seed-moonboard
+    [Authorize]
     [HttpPost("seed-moonboard")]
     public async Task<ActionResult> SeedMoonboardRoutes()
     {
@@ -195,6 +200,7 @@ public class RoutesController : ControllerBase
 
     // DELETE: api/routes/delete-all
     // WARNING: This endpoint is for development/testing purposes only
+    [Authorize]
     [HttpDelete("delete-all")]
     public async Task<ActionResult> DeleteAllRoutes()
     {

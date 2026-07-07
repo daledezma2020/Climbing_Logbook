@@ -1,6 +1,21 @@
-import { useState, useEffect } from 'react';
-import type { ClimbRoute } from '@/types/climbroute';
- 
+import { useState, useEffect } from "react";
+import { fetchJson } from "@/lib/api";
+import type { ClimbRoute } from "@/types/climbroute";
+
+type ApiClimbRoute = Partial<ClimbRoute> & {
+  Id?: number;
+  Name?: string;
+  Grade?: string;
+  AverageRating?: number;
+  Setter?: string | null;
+  Type?: string | null;
+  Picture?: string | null;
+  Video?: string | null;
+  Location?: string;
+  CreatedAt?: string;
+  UpdatedAt?: string | null;
+};
+
 interface UseClimbRoutesReturn {
   routes: ClimbRoute[];
   loading: boolean;
@@ -17,32 +32,26 @@ export function useClimbRoutes(): UseClimbRoutesReturn {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('http://localhost:5050/api/routes');
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await fetchJson<ApiClimbRoute[]>("/api/routes");
 
       // Transform PascalCase to camelCase
-      const transformedRoutes = data.map((route: any) => ({
-        id: route.id || route.Id,
-        name: route.name || route.Name,
-        grade: route.grade || route.Grade,
-        averageRating: route.averageRating || route.AverageRating,
-        setter: route.setter || route.Setter,
-        type: route.type || route.Type,
-        picture: route.picture || route.Picture,
-        video: route.video || route.Video,
-        location: route.location || route.Location,
-        createdAt: route.createdAt || route.CreatedAt,
-        updatedAt: route.updatedAt || route.UpdatedAt
+      const transformedRoutes: ClimbRoute[] = data.map((route) => ({
+        id: route.id ?? route.Id ?? 0,
+        name: route.name ?? route.Name ?? "",
+        grade: route.grade ?? route.Grade ?? "",
+        averageRating: route.averageRating ?? route.AverageRating ?? 0,
+        setter: route.setter ?? route.Setter ?? null,
+        type: route.type ?? route.Type ?? null,
+        picture: route.picture ?? route.Picture ?? null,
+        video: route.video ?? route.Video ?? null,
+        location: route.location ?? route.Location ?? "",
+        createdAt: route.createdAt ?? route.CreatedAt ?? "",
+        updatedAt: route.updatedAt ?? route.UpdatedAt ?? null,
       }));
 
       setRoutes(transformedRoutes);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch routes');
+      setError(err instanceof Error ? err.message : "Failed to fetch routes");
     } finally {
       setLoading(false);
     }
