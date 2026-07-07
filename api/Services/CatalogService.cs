@@ -10,17 +10,20 @@ public class CatalogService : ICatalogService
     private readonly ApplicationDbContext _context;
     private readonly IOpenBetaClient _openBetaClient;
     private readonly IOsmClient _osmClient;
+    private readonly ISetterService _setterService;
     private readonly ILogger<CatalogService> _logger;
 
     public CatalogService(
         ApplicationDbContext context,
         IOpenBetaClient openBetaClient,
         IOsmClient osmClient,
+        ISetterService setterService,
         ILogger<CatalogService> logger)
     {
         _context = context;
         _openBetaClient = openBetaClient;
         _osmClient = osmClient;
+        _setterService = setterService;
         _logger = logger;
     }
 
@@ -41,7 +44,9 @@ public class CatalogService : ICatalogService
 
     public async Task<ClimbSummaryDto> CreateManualClimbAsync(CreateManualClimbDto dto)
     {
-        ValidateClimbContext(dto.PlaceId, dto.BoardConfigurationId, dto.NewPlace);
+        var hasBoard = dto.BoardConfigurationId.HasValue
+            || !string.IsNullOrWhiteSpace(dto.BoardConfigurationName);
+        ValidateClimbContext(dto.PlaceId, hasBoard, dto.CustomLocation);
 
         Place? place = null;
         if (dto.PlaceId.HasValue)
@@ -49,16 +54,10 @@ public class CatalogService : ICatalogService
             place = await _context.Places.FindAsync(dto.PlaceId.Value)
                 ?? throw new InvalidOperationException("Place not found.");
         }
-        else if (dto.NewPlace != null)
-        {
-            place = CreatePlaceEntity(dto.NewPlace);
-            _context.Places.Add(place);
-        }
 
-        if (dto.BoardConfigurationId.HasValue && !await _context.BoardConfigurations.AnyAsync(b => b.Id == dto.BoardConfigurationId.Value))
-        {
-            throw new InvalidOperationException("Board configuration not found.");
-        }
+        var boardConfiguration = await ResolveBoardConfigurationAsync(
+            dto.BoardConfigurationId, dto.BoardConfigurationName);
+        var setter = await ResolveSetterAsync(dto.SetterId, dto.SetterName);
 
         var climb = new Climb
         {
@@ -68,8 +67,13 @@ public class CatalogService : ICatalogService
             Grade = dto.Grade.Trim(),
             Place = place,
             PlaceId = place == null ? dto.PlaceId : null,
-            BoardConfigurationId = dto.BoardConfigurationId,
-            SetterId = dto.SetterId,
+            BoardConfiguration = boardConfiguration,
+            BoardConfigurationId = boardConfiguration is { Id: > 0 } ? boardConfiguration.Id : null,
+            CustomLocationName = dto.CustomLocation?.Name.Trim(),
+            CustomLocationLatitude = dto.CustomLocation?.Latitude,
+            CustomLocationLongitude = dto.CustomLocation?.Longitude,
+            Setter = setter,
+            SetterId = setter is { Id: > 0 } ? setter.Id : null,
             FirstAscentName = dto.FirstAscentName,
             PictureUrl = dto.PictureUrl,
             VideoUrl = dto.VideoUrl
@@ -320,10 +324,12 @@ public class CatalogService : ICatalogService
             Sources = c.ExternalReferences.Select(r => r.Provider.ToString().ToLowerInvariant()).DefaultIfEmpty("local").Distinct().ToArray(),
             Grade = new GradeDto(c.GradeSystem.ToString().ToLowerInvariant(), c.Grade),
             Discipline = c.Discipline,
-            PlaceName = c.Place?.Name ?? c.BoardConfiguration?.Name,
+            PlaceName = c.Place?.Name ?? c.BoardConfiguration?.Name ?? c.CustomLocationName,
             PlaceKind = c.Place?.Kind,
             Coordinates = c.Place?.Latitude != null && c.Place.Longitude != null
                 ? new CoordinatesDto(c.Place.Latitude.Value, c.Place.Longitude.Value)
+                : c.CustomLocationLatitude.HasValue && c.CustomLocationLongitude.HasValue
+                    ? new CoordinatesDto(c.CustomLocationLatitude.Value, c.CustomLocationLongitude.Value)
                 : null,
             LocalId = c.Id
         });
@@ -381,11 +387,11 @@ public class CatalogService : ICatalogService
     {
         return query
             .Include(l => l.Place)
-            .Include(l => l.Climb)!.ThenInclude(c => c.Place)
-            .Include(l => l.Climb)!.ThenInclude(c => c.BoardConfiguration)
-            .Include(l => l.Climb)!.ThenInclude(c => c.Setter)
-            .Include(l => l.Climb)!.ThenInclude(c => c.ExternalReferences)
-            .Include(l => l.Climb)!.ThenInclude(c => c.LogEntries);
+            .Include(l => l.Climb)!.ThenInclude(c => c!.Place)
+            .Include(l => l.Climb)!.ThenInclude(c => c!.BoardConfiguration)
+            .Include(l => l.Climb)!.ThenInclude(c => c!.Setter)
+            .Include(l => l.Climb)!.ThenInclude(c => c!.ExternalReferences)
+            .Include(l => l.Climb)!.ThenInclude(c => c!.LogEntries);
     }
 
     private async Task<Place?> FindNearbyPlaceAsync(string name, PlaceKind kind, double? latitude, double? longitude)
@@ -440,14 +446,68 @@ public class CatalogService : ICatalogService
         };
     }
 
-    private static void ValidateClimbContext(int? placeId, int? boardConfigurationId, CreatePlaceDto? newPlace)
+    private static void ValidateClimbContext(int? placeId, bool hasBoard, CreateCustomLocationDto? customLocation)
     {
         var contextCount = (placeId.HasValue ? 1 : 0)
-            + (boardConfigurationId.HasValue ? 1 : 0)
-            + (newPlace == null ? 0 : 1);
+            + (hasBoard ? 1 : 0)
+            + (customLocation == null ? 0 : 1);
         if (contextCount != 1)
         {
-            throw new InvalidOperationException("Exactly one place, new place, or board configuration is required.");
+            throw new InvalidOperationException("Exactly one place, custom location, or board configuration is required.");
         }
+
+        if (customLocation != null && string.IsNullOrWhiteSpace(customLocation.Name))
+        {
+            throw new InvalidOperationException("Custom location name is required.");
+        }
+    }
+
+    private async Task<BoardConfiguration?> ResolveBoardConfigurationAsync(int? id, string? name)
+    {
+        if (id.HasValue)
+        {
+            return await _context.BoardConfigurations.FindAsync(id.Value)
+                ?? throw new InvalidOperationException("Board configuration not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        var trimmed = name.Trim();
+        var existing = await _context.BoardConfigurations
+            .FirstOrDefaultAsync(b => b.Name.ToLower() == trimmed.ToLower());
+        if (existing != null)
+        {
+            return existing;
+        }
+
+        var board = new BoardConfiguration
+        {
+            Name = trimmed,
+            Manufacturer = "Custom",
+            Year = 0
+        };
+        _context.BoardConfigurations.Add(board);
+        return board;
+    }
+
+    private async Task<Setter?> ResolveSetterAsync(int? id, string? name)
+    {
+        if (id.HasValue)
+        {
+            return await _context.Setters.FindAsync(id.Value)
+                ?? throw new InvalidOperationException("Setter not found.");
+        }
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        var trimmed = name.Trim();
+        return await _setterService.GetSetterByNameAsync(trimmed)
+            ?? await _setterService.CreateSetterAsync(new Setter { Name = trimmed });
     }
 }

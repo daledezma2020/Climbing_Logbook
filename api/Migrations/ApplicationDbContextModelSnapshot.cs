@@ -64,6 +64,16 @@ namespace api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<double?>("CustomLocationLatitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<double?>("CustomLocationLongitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("CustomLocationName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<int>("Discipline")
                         .HasColumnType("integer");
 
@@ -111,7 +121,7 @@ namespace api.Migrations
 
                     b.ToTable("Climbs", t =>
                         {
-                            t.HasCheckConstraint("CK_Climbs_Context", "(\"PlaceId\" IS NOT NULL AND \"BoardConfigurationId\" IS NULL) OR (\"PlaceId\" IS NULL AND \"BoardConfigurationId\" IS NOT NULL)");
+                            t.HasCheckConstraint("CK_Climbs_Context", "\r\n(\r\n    \"PlaceId\" IS NOT NULL\r\n    AND \"BoardConfigurationId\" IS NULL\r\n    AND \"CustomLocationName\" IS NULL\r\n    AND \"CustomLocationLatitude\" IS NULL\r\n    AND \"CustomLocationLongitude\" IS NULL\r\n)\r\nOR (\r\n    \"PlaceId\" IS NULL\r\n    AND \"BoardConfigurationId\" IS NOT NULL\r\n    AND \"CustomLocationName\" IS NULL\r\n    AND \"CustomLocationLatitude\" IS NULL\r\n    AND \"CustomLocationLongitude\" IS NULL\r\n)\r\nOR (\r\n    \"PlaceId\" IS NULL\r\n    AND \"BoardConfigurationId\" IS NULL\r\n    AND \"CustomLocationName\" IS NOT NULL\r\n    AND \"CustomLocationLatitude\" IS NOT NULL\r\n    AND \"CustomLocationLongitude\" IS NOT NULL\r\n)");
                         });
                 });
 

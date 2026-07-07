@@ -25,6 +25,15 @@ public class Climb
     public int? BoardConfigurationId { get; set; }
     public BoardConfiguration? BoardConfiguration { get; set; }
 
+    [StringLength(100)]
+    public string? CustomLocationName { get; set; }
+
+    [Range(-90, 90)]
+    public double? CustomLocationLatitude { get; set; }
+
+    [Range(-180, 180)]
+    public double? CustomLocationLongitude { get; set; }
+
     public int? SetterId { get; set; }
     public Setter? Setter { get; set; }
 

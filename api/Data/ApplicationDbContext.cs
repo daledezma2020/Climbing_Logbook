@@ -22,9 +22,31 @@ public class ApplicationDbContext : DbContext
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<Climb>()
-            .HasCheckConstraint(
-                "CK_Climbs_Context",
-                "(\"PlaceId\" IS NOT NULL AND \"BoardConfigurationId\" IS NULL) OR (\"PlaceId\" IS NULL AND \"BoardConfigurationId\" IS NOT NULL)");
+            .ToTable(t => t.HasCheckConstraint(
+                    "CK_Climbs_Context",
+                    """
+                    (
+                        "PlaceId" IS NOT NULL
+                        AND "BoardConfigurationId" IS NULL
+                        AND "CustomLocationName" IS NULL
+                        AND "CustomLocationLatitude" IS NULL
+                        AND "CustomLocationLongitude" IS NULL
+                    )
+                    OR (
+                        "PlaceId" IS NULL
+                        AND "BoardConfigurationId" IS NOT NULL
+                        AND "CustomLocationName" IS NULL
+                        AND "CustomLocationLatitude" IS NULL
+                        AND "CustomLocationLongitude" IS NULL
+                    )
+                    OR (
+                        "PlaceId" IS NULL
+                        AND "BoardConfigurationId" IS NULL
+                        AND "CustomLocationName" IS NOT NULL
+                        AND "CustomLocationLatitude" IS NOT NULL
+                        AND "CustomLocationLongitude" IS NOT NULL
+                    )
+                    """));
 
         modelBuilder.Entity<Climb>()
             .HasMany(c => c.Comments)

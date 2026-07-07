@@ -37,6 +37,7 @@ public class ClimbSummaryDto
     public PlaceSummaryDto? Place { get; set; }
     public int? BoardConfigurationId { get; set; }
     public BoardConfigurationDto? BoardConfiguration { get; set; }
+    public CustomLocationDto? CustomLocation { get; set; }
     public int? SetterId { get; set; }
     public string? SetterName { get; set; }
     public string? FirstAscentName { get; set; }
@@ -97,7 +98,13 @@ public class CreateManualClimbDto
 
     public int? BoardConfigurationId { get; set; }
 
+    [StringLength(100)]
+    public string? BoardConfigurationName { get; set; }
+
     public int? SetterId { get; set; }
+
+    [StringLength(100)]
+    public string? SetterName { get; set; }
 
     [StringLength(100)]
     public string? FirstAscentName { get; set; }
@@ -108,7 +115,27 @@ public class CreateManualClimbDto
     [StringLength(500)]
     public string? VideoUrl { get; set; }
 
-    public CreatePlaceDto? NewPlace { get; set; }
+    public CreateCustomLocationDto? CustomLocation { get; set; }
+}
+
+public class CustomLocationDto
+{
+    public string Name { get; set; } = string.Empty;
+    public double Latitude { get; set; }
+    public double Longitude { get; set; }
+}
+
+public class CreateCustomLocationDto
+{
+    [Required]
+    [StringLength(100)]
+    public string Name { get; set; } = string.Empty;
+
+    [Range(-90, 90)]
+    public double Latitude { get; set; }
+
+    [Range(-180, 180)]
+    public double Longitude { get; set; }
 }
 
 public class CreatePlaceDto

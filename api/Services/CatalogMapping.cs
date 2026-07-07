@@ -37,6 +37,16 @@ public static class CatalogMapping
         Place = climb.Place == null ? null : ToDto(climb.Place),
         BoardConfigurationId = climb.BoardConfigurationId,
         BoardConfiguration = climb.BoardConfiguration == null ? null : ToDto(climb.BoardConfiguration),
+        CustomLocation = string.IsNullOrWhiteSpace(climb.CustomLocationName)
+            || !climb.CustomLocationLatitude.HasValue
+            || !climb.CustomLocationLongitude.HasValue
+                ? null
+                : new CustomLocationDto
+                {
+                    Name = climb.CustomLocationName,
+                    Latitude = climb.CustomLocationLatitude.Value,
+                    Longitude = climb.CustomLocationLongitude.Value
+                },
         SetterId = climb.SetterId,
         SetterName = climb.Setter?.Name,
         FirstAscentName = climb.FirstAscentName,

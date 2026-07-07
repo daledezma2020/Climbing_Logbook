@@ -48,13 +48,27 @@ export function Combobox({
   const displayValue = selectedOption
     ? selectedOption.label
     : value || placeholder;
+  const customValue = searchValue.trim();
+  const showCustomValue =
+    allowCustomValue &&
+    customValue.length > 0 &&
+    !options.some(
+      (option) =>
+        option.value.toLowerCase() === customValue.toLowerCase() ||
+        option.label.toLowerCase() === customValue.toLowerCase(),
+    );
+
+  const chooseCustomValue = () => {
+    if (!customValue) return;
+    onValueChange(customValue);
+    setSearchValue("");
+    setOpen(false);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (allowCustomValue && e.key === "Enter" && searchValue) {
+    if (showCustomValue && e.key === "Enter") {
       e.preventDefault();
-      onValueChange(searchValue);
-      setSearchValue("");
-      setOpen(false);
+      chooseCustomValue();
     }
   };
 
@@ -81,9 +95,9 @@ export function Combobox({
           />
           <CommandList>
             <CommandEmpty>
-              {allowCustomValue && searchValue ? (
+              {showCustomValue ? (
                 <div className="px-2 py-1.5 text-sm">
-                  Press Enter to add "{searchValue}"
+                  Press Enter to use "{customValue}"
                 </div>
               ) : (
                 emptyMessage
@@ -110,6 +124,12 @@ export function Combobox({
                   {option.label}
                 </CommandItem>
               ))}
+              {showCustomValue && (
+                <CommandItem value={customValue} onSelect={chooseCustomValue}>
+                  <Check className="mr-2 h-4 w-4 opacity-0" />
+                  Use "{customValue}"
+                </CommandItem>
+              )}
             </CommandGroup>
           </CommandList>
         </Command>

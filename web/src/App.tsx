@@ -1,15 +1,9 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import Home from '@/pages/Home';
-import Routes from '@/pages/Routes';
-import CreateRoute from '@/pages/CreateRoute';
-import EditRoute from '@/pages/EditRoute';
-import { useParams } from 'react-router-dom';
-
-const EditRouteWrapper = () => {
-  const { id } = useParams<{ id: string }>();
-  return <EditRoute id={parseInt(id || '0', 10)} />;
-};
+import Logbook from '@/pages/Logbook';
+import Climbs from '@/pages/Climbs';
+import LogClimb from '@/pages/LogClimb';
 
 const router = createBrowserRouter([
   {
@@ -21,17 +15,17 @@ const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path: 'routes',
-        element: <Routes />,
+        path: 'logbook',
+        element: <Logbook />,
       },
       {
-        path: 'routes/create',
-        element: <CreateRoute />,
+        path: 'climbs',
+        element: <Climbs />,
       },
       {
-        path: 'routes/edit/:id',
-        element: <EditRouteWrapper />,
-      }
+        path: 'log/new',
+        element: <LogClimb />,
+      },
     ],
   },
 ]);
