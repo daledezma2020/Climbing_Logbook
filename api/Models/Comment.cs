@@ -16,6 +16,6 @@ public class Comment
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public int ClimbRouteId { get; set; }
-    public ClimbRoute? ClimbRoute { get; set; }
+    public int ClimbId { get; set; }
+    public Climb? Climb { get; set; }
 }

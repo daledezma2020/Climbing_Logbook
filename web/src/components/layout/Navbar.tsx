@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Mountain,
   Home as HomeIcon,
+  BookOpen,
   LogIn,
   LogOut,
   UserPlus,
@@ -34,7 +35,7 @@ export default function Navbar() {
           >
             <Mountain className="h-6 w-6 text-slate-900" />
             <span className="font-bold text-xl text-slate-900">
-              Climbing Logbook
+              Vertigo Climbing
             </span>
           </Link>
 
@@ -49,13 +50,23 @@ export default function Navbar() {
               </Button>
             </Link>
 
-            <Link to="/routes">
+            <Link to="/logbook">
               <Button
-                variant={isActive("/routes") ? "default" : "ghost"}
+                variant={isActive("/logbook") ? "default" : "ghost"}
+                className="gap-2"
+              >
+                <BookOpen className="h-4 w-4" />
+                Logbook
+              </Button>
+            </Link>
+
+            <Link to="/climbs">
+              <Button
+                variant={isActive("/climbs") ? "default" : "ghost"}
                 className="gap-2"
               >
                 <Mountain className="h-4 w-4" />
-                Routes
+                Climbs
               </Button>
             </Link>
           </div>

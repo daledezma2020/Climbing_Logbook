@@ -1,15 +1,26 @@
-using Microsoft.EntityFrameworkCore;
 using api.Interfaces;
 using api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 var auth0Domain = $"https://{builder.Configuration["Auth0:Domain"]}/";
 
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -32,7 +43,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register application services
-builder.Services.AddScoped<IClimbRouteService, ClimbRouteService>();
+builder.Services.AddScoped<ISeedingService, SeedingService>();
+builder.Services.AddScoped<ISetterService, SetterService>();
+builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddHttpClient<IOpenBetaClient, OpenBetaClient>();
+builder.Services.AddHttpClient<IOsmClient, OsmClient>();
 
 // Add CORS
 builder.Services.AddCors(options =>
@@ -71,18 +86,18 @@ using (var scope = app.Services.CreateScope())
         var pendingMigrations = db.Database.GetPendingMigrations();
         if (pendingMigrations.Any())
         {
-            Console.WriteLine($"📦 Applying {pendingMigrations.Count()} pending migration(s)...");
+            Console.WriteLine($"Applying {pendingMigrations.Count()} pending migration(s)...");
             db.Database.Migrate();
-            Console.WriteLine("✅ Migrations applied successfully!");
+            Console.WriteLine("Migrations applied successfully!");
         }
         else
         {
-            Console.WriteLine("✅ Database is up to date!");
+            Console.WriteLine("Database is up to date!");
         }
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"❌ Database migration failed: {ex.Message}");
+        Console.WriteLine($"Database migration failed: {ex.Message}");
     }
 }
 

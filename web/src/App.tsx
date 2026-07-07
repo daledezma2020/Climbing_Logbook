@@ -1,7 +1,9 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import Home from '@/pages/Home';
-import Routes from '@/pages/Routes';
+import Logbook from '@/pages/Logbook';
+import Climbs from '@/pages/Climbs';
+import LogClimb from '@/pages/LogClimb';
 
 const router = createBrowserRouter([
   {
@@ -13,8 +15,16 @@ const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path: 'routes',
-        element: <Routes />,
+        path: 'logbook',
+        element: <Logbook />,
+      },
+      {
+        path: 'climbs',
+        element: <Climbs />,
+      },
+      {
+        path: 'log/new',
+        element: <LogClimb />,
       },
     ],
   },
