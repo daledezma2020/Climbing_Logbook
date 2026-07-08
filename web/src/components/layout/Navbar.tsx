@@ -1,4 +1,5 @@
 import { useAuth0 } from "@auth0/auth0-react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,6 +16,7 @@ export default function Navbar() {
   const location = useLocation();
   const { loginWithRedirect, logout, user, isAuthenticated, isLoading } =
     useAuth0();
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
   const displayName = user?.name ?? user?.email ?? "Signed in";
@@ -24,6 +26,26 @@ export default function Navbar() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const signIn = async (screenHint?: "signup") => {
+    try {
+      setAuthError(null);
+      await loginWithRedirect(
+        screenHint
+          ? {
+              authorizationParams: {
+                screen_hint: screenHint,
+              },
+            }
+          : undefined,
+      );
+    } catch (err) {
+      setAuthError(
+        err instanceof Error
+          ? err.message
+          : "Auth0 could not start the sign-in flow.",
+      );
+    }
+  };
 
   return (
     <nav className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
@@ -71,7 +93,7 @@ export default function Navbar() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="relative flex items-center gap-2">
             {isLoading ? (
               <div className="h-9 w-36 rounded-md bg-slate-100" />
             ) : isAuthenticated ? (
@@ -105,25 +127,24 @@ export default function Navbar() {
                 <Button
                   variant="ghost"
                   className="gap-2"
-                  onClick={() => loginWithRedirect()}
+                  onClick={() => void signIn()}
                 >
                   <LogIn className="h-4 w-4" />
                   Sign in
                 </Button>
                 <Button
                   className="gap-2"
-                  onClick={() =>
-                    loginWithRedirect({
-                      authorizationParams: {
-                        screen_hint: "signup",
-                      },
-                    })
-                  }
+                  onClick={() => void signIn("signup")}
                 >
                   <UserPlus className="h-4 w-4" />
                   Sign up
                 </Button>
               </>
+            )}
+            {authError && (
+              <p className="absolute right-0 top-11 w-72 rounded-md border border-red-200 bg-white p-2 text-xs text-red-700 shadow-sm">
+                {authError}
+              </p>
             )}
           </div>
         </div>
