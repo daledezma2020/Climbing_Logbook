@@ -280,7 +280,7 @@ public class CatalogService : ICatalogService
         return CatalogMapping.ToDto(saved);
     }
 
-    public async Task<SearchResponseDto> SearchAsync(string query, string? bbox, int limit)
+    public async Task<SearchResponseDto> SearchAsync(string query, int limit)
     {
         limit = Math.Clamp(limit, 1, 25);
         var response = new SearchResponseDto();
@@ -289,15 +289,8 @@ public class CatalogService : ICatalogService
 
         var localTask = RunProviderAsync("local", () => SearchLocalAsync(query, limit), response.Providers);
         var openBetaTask = RunProviderAsync("openbeta", () => _openBetaClient.SearchAsync(query, limit, timeout.Token), response.Providers);
-        var osmTask = string.IsNullOrWhiteSpace(bbox)
-            ? Task.FromResult(new List<SearchResultDto>())
-            : RunProviderAsync("osm", () => _osmClient.SearchPlacesAsync(query, bbox, limit, timeout.Token), response.Providers);
-        if (string.IsNullOrWhiteSpace(bbox))
-        {
-            response.Providers["osm"] = "skipped";
-        }
 
-        var providerResults = await Task.WhenAll(localTask, openBetaTask, osmTask);
+        var providerResults = await Task.WhenAll(localTask, openBetaTask);
         response.Results = providerResults
             .SelectMany(r => r)
             .GroupBy(r => r.Key)

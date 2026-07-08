@@ -26,7 +26,7 @@ interface LocationPickerProps {
   mapClassName?: string;
 }
 
-interface OSMSearchResult {
+interface MapSearchResult {
   place_id: number;
   display_name: string;
   lat: string;
@@ -73,20 +73,38 @@ const pinIcon = L.divIcon({
   popupAnchor: [0, -38],
   html: `
     <div style="
+      position: relative;
       width: 32px;
-      height: 32px;
-      transform: rotate(45deg);
-      border-radius: 50% 50% 50% 4px;
-      background: #0f172a;
-      border: 3px solid #ffffff;
-      box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
+      height: 42px;
     ">
       <div style="
-        width: 10px;
-        height: 10px;
-        margin: 8px;
+        position: absolute;
+        left: 3px;
+        top: 0;
+        width: 26px;
+        height: 26px;
+        border-radius: 50% 50% 50% 0;
+        background: #0f172a;
+        border: 3px solid #ffffff;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.28);
+        transform: rotate(-45deg);
+      ">
+        <div style="
+          width: 8px;
+          height: 8px;
+          margin: 6px;
+          border-radius: 9999px;
+          background: #ffffff;
+        "></div>
+      </div>
+      <div style="
+        position: absolute;
+        left: 12px;
+        bottom: 0;
+        width: 8px;
+        height: 8px;
         border-radius: 9999px;
-        background: #ffffff;
+        background: rgba(15, 23, 42, 0.18);
       "></div>
     </div>
   `,
@@ -100,7 +118,7 @@ export default function LocationPicker({
 }: LocationPickerProps) {
   const center = value ?? US_CENTER;
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<OSMSearchResult[]>([]);
+  const [results, setResults] = useState<MapSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,15 +141,15 @@ export default function LocationPicker({
       );
       if (!response.ok) {
         throw new Error(
-          `OpenStreetMap returned HTTP ${response.status} while searching for "${trimmed}".`,
+          `Map search returned HTTP ${response.status} while searching for "${trimmed}".`,
         );
       }
-      setResults((await response.json()) as OSMSearchResult[]);
+      setResults((await response.json()) as MapSearchResult[]);
     } catch (err) {
       setError(
         err instanceof Error
-          ? `${err.message} You can try a broader search like a city name, or click the map manually to place the pin.`
-          : "OpenStreetMap search failed. You can still click the map manually to place the pin.",
+          ? `${err.message} You can still click the map manually to place the pin.`
+          : "Map search failed. You can still click the map manually to place the pin.",
       );
       setResults([]);
     } finally {
@@ -139,7 +157,7 @@ export default function LocationPicker({
     }
   };
 
-  const selectResult = (result: OSMSearchResult) => {
+  const selectResult = (result: MapSearchResult) => {
     onChange({ lat: Number(result.lat), lng: Number(result.lon) });
     onPlaceSelected?.(
       result.display_name.split(",")[0]?.trim() || result.display_name,
@@ -164,7 +182,7 @@ export default function LocationPicker({
           <Input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search OpenStreetMap..."
+            placeholder="Search for a map location..."
             className="pl-9"
           />
         </div>

@@ -110,7 +110,7 @@ export default function ManualClimbForm({
     }
     if (mode === "custom-location") {
       if (!customLocation?.name.trim()) {
-        return "Choose a custom location, search OpenStreetMap or drop a pin, then click Use this location.";
+        return "Choose a custom location, search or drop a pin, then click Use this location.";
       }
     }
     return null;
@@ -270,7 +270,7 @@ export default function ManualClimbForm({
             <p className="text-sm text-slate-600">
               {customLocation
                 ? `${customLocation.latitude.toFixed(6)}, ${customLocation.longitude.toFixed(6)}`
-                : "Search OpenStreetMap or drop a pin on the map."}
+                : "Search for a location or drop a pin on the map."}
             </p>
           </div>
           <Button
@@ -315,8 +315,8 @@ export default function ManualClimbForm({
           <DialogHeader>
             <DialogTitle>Choose Custom Location</DialogTitle>
             <DialogDescription>
-              Search for a place or click the map to choose where this climb is.
-              This will be saved on the climb, not as a reusable place.
+              Search for a location or click the map to choose where this climb
+              is. This will be saved on the climb, not as a reusable place.
             </DialogDescription>
           </DialogHeader>
 

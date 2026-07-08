@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { apiFetch } from "@/lib/api";
 import {
   importOpenBetaClimb,
-  importOsmPlace,
   useSearch,
 } from "@/hooks/catalog-hooks";
 import { SourceBadges, TypeBadge } from "@/components/log/ResultBadges";
@@ -22,7 +21,6 @@ type Step = "search" | "manual" | "log";
 const PROVIDER_LABELS: Record<string, string> = {
   local: "Local",
   openbeta: "OpenBeta",
-  osm: "OpenStreetMap",
 };
 
 export default function LogClimb() {
@@ -96,20 +94,13 @@ export default function LogClimb() {
     setResolveError(null);
     setResolving(result.key);
     try {
-      let placeId = result.localId ?? null;
-      if (!placeId && result.externalId) {
-        const [osmType, osmId] = result.externalId.split("/");
-        const accessToken = await getAccessTokenSilently();
-        const place = await importOsmPlace(osmType, osmId, accessToken);
-        placeId = place.id;
-      }
-      setManualSeed({ placeId });
+      setManualSeed({ placeId: result.localId ?? null });
       setStep("manual");
     } catch (err) {
       setResolveError(
         err instanceof Error
-          ? `The API could not import that place. ${err.message}`
-          : "The API could not import that place. Try a custom location instead.",
+          ? `The API could not prepare that place. ${err.message}`
+          : "The API could not prepare that place. Try a custom location instead.",
       );
     } finally {
       setResolving(null);

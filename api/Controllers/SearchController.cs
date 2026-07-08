@@ -18,9 +18,8 @@ public class SearchController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<SearchResponseDto>> Search(
         [FromQuery] string q = "",
-        [FromQuery] string? bbox = null,
         [FromQuery] int limit = 10)
     {
-        return Ok(await _catalogService.SearchAsync(q, bbox, limit));
+        return Ok(await _catalogService.SearchAsync(q, limit));
     }
 }
