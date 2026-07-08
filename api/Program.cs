@@ -8,6 +8,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+// Local Auth0 values are expected from .NET user secrets. appsettings.json only keeps placeholders.
 var auth0Domain = $"https://{builder.Configuration["Auth0:Domain"]}/";
 
 builder.Logging.ClearProviders();
