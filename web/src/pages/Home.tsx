@@ -45,7 +45,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">Climbs Sent</CardTitle>
+              <CardTitle className="text-lg">All time Climbs</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-slate-900">{stats.total}</p>
@@ -65,7 +65,7 @@ export default function Home() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-lg">This Month</CardTitle>
+              <CardTitle className="text-lg">Climbs This Month</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-slate-900">

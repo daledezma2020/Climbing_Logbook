@@ -214,7 +214,7 @@ export default function LogClimb() {
           }}
         >
           <Plus className="mr-2 h-4 w-4" />
-          Add new climb, then log it
+          Add new climb
         </Button>
         <span className="text-sm text-slate-500">
           New climbs use a two-step flow: create the climb, then save the log
