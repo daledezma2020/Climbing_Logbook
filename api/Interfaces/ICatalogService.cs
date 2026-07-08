@@ -16,5 +16,5 @@ public interface ICatalogService
     Task<List<BoardConfigurationDto>> GetBoardConfigurationsAsync();
     Task<List<LogEntryDto>> GetLogEntriesAsync();
     Task<LogEntryDto> CreateLogEntryAsync(CreateLogEntryDto dto);
-    Task<SearchResponseDto> SearchAsync(string query, string? bbox, int limit);
+    Task<SearchResponseDto> SearchAsync(string query, int limit);
 }

@@ -1,10 +1,7 @@
-using api.DTO;
-
 namespace api.Interfaces;
 
 public interface IOsmClient
 {
-    Task<List<SearchResultDto>> SearchPlacesAsync(string query, string bbox, int limit, CancellationToken cancellationToken);
     Task<OsmPlaceDetails?> GetPlaceAsync(string osmType, string osmId, CancellationToken cancellationToken);
 }
 

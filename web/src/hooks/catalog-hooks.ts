@@ -121,13 +121,12 @@ export function useSearch() {
   const requestId = useRef(0);
 
   const search = useCallback(
-    async (query: string, bbox?: string, limit = 10) => {
+    async (query: string, limit = 10) => {
       const id = ++requestId.current;
       try {
         setLoading(true);
         setError(null);
         const params = new URLSearchParams({ q: query, limit: String(limit) });
-        if (bbox) params.set("bbox", bbox);
         const data = await apiFetch<SearchResponse>(`/search?${params}`);
         if (id === requestId.current) setResults(data);
       } catch (err) {
@@ -175,17 +174,6 @@ export function createManualClimb(
 
 export function importOpenBetaClimb(uuid: string, accessToken: string) {
   return apiFetch<Climb>(`/climbs/openbeta/${uuid}/import`, {
-    method: "POST",
-    accessToken,
-  });
-}
-
-export function importOsmPlace(
-  osmType: string,
-  osmId: string,
-  accessToken: string,
-) {
-  return apiFetch<Place>(`/places/osm/${osmType}/${osmId}/import`, {
     method: "POST",
     accessToken,
   });

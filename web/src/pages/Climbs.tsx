@@ -8,6 +8,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BookPlus,
+  X,
 } from "lucide-react";
 import {
   Table,
@@ -32,6 +33,33 @@ import { SourceBadges } from "@/components/log/ResultBadges";
 import type { Climb } from "@/types/catalog";
 
 const PAGE_SIZE = 15;
+const ALL_FILTER_VALUE = "all";
+
+type RatingFilter = "all" | "unrated" | "1" | "2" | "3" | "4" | "5";
+
+interface ColumnFilters {
+  name: string;
+  grade: string;
+  setter: string;
+  where: string;
+  rating: RatingFilter;
+  source: string;
+}
+
+const DEFAULT_FILTERS: ColumnFilters = {
+  name: "",
+  grade: ALL_FILTER_VALUE,
+  setter: "",
+  where: "",
+  rating: "all",
+  source: ALL_FILTER_VALUE,
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  local: "Local",
+  openbeta: "OpenBeta",
+  openstreetmap: "OpenStreetMap",
+};
 
 function whereLabel(climb: Climb): string | null {
   return (
@@ -42,13 +70,35 @@ function whereLabel(climb: Climb): string | null {
   );
 }
 
+function effectiveSources(climb: Climb): string[] {
+  return climb.sources.length > 0
+    ? climb.sources.map((source) => source.toLowerCase())
+    : ["local"];
+}
+
+function sourceLabel(source: string): string {
+  return SOURCE_LABELS[source.toLowerCase()] ?? source;
+}
+
+function includesText(value: string | null | undefined, filter: string) {
+  return value?.toLowerCase().includes(filter.trim().toLowerCase()) ?? false;
+}
+
 export default function Climbs() {
   const navigate = useNavigate();
   const { climbs, loading, error, deleteClimb } = useClimbs();
 
   const [query, setQuery] = useState("");
-  const [grade, setGrade] = useState("all");
+  const [filters, setFilters] = useState<ColumnFilters>(DEFAULT_FILTERS);
   const [page, setPage] = useState(1);
+
+  const updateFilter = <K extends keyof ColumnFilters>(
+    key: K,
+    value: ColumnFilters[K],
+  ) => {
+    setFilters((current) => ({ ...current, [key]: value }));
+    setPage(1);
+  };
 
   const grades = useMemo(
     () =>
@@ -60,13 +110,76 @@ export default function Climbs() {
     [climbs],
   );
 
+  const sources = useMemo(
+    () =>
+      Array.from(new Set(climbs.flatMap((climb) => effectiveSources(climb))))
+        .sort((a, b) => sourceLabel(a).localeCompare(sourceLabel(b))),
+    [climbs],
+  );
+
   const filtered = useMemo(() => {
     return climbs.filter((c) => {
-      const matchesQuery = c.name.toLowerCase().includes(query.toLowerCase());
-      const matchesGrade = grade === "all" || c.grade === grade;
-      return matchesQuery && matchesGrade;
+      const where = whereLabel(c);
+      const sources = effectiveSources(c);
+      const normalizedQuery = query.trim().toLowerCase();
+      const queryFields = [
+        c.name,
+        c.grade,
+        c.setterName,
+        where,
+        c.averageRating > 0 ? c.averageRating.toFixed(1) : "unrated",
+        ...sources.map(sourceLabel),
+      ];
+
+      const matchesQuery =
+        normalizedQuery.length === 0 ||
+        queryFields.some((field) =>
+          field?.toLowerCase().includes(normalizedQuery),
+        );
+      const matchesName = includesText(c.name, filters.name);
+      const matchesGrade =
+        filters.grade === ALL_FILTER_VALUE || c.grade === filters.grade;
+      const matchesSetter =
+        filters.setter.trim().length === 0 ||
+        includesText(c.setterName ?? "Unassigned", filters.setter);
+      const matchesWhere =
+        filters.where.trim().length === 0 ||
+        includesText(where ?? "Unknown", filters.where);
+      const matchesRating =
+        filters.rating === "all" ||
+        (filters.rating === "unrated"
+          ? c.averageRating <= 0
+          : c.averageRating >= Number(filters.rating));
+      const matchesSource =
+        filters.source === ALL_FILTER_VALUE ||
+        sources.includes(filters.source.toLowerCase());
+
+      return (
+        matchesQuery &&
+        matchesName &&
+        matchesGrade &&
+        matchesSetter &&
+        matchesWhere &&
+        matchesRating &&
+        matchesSource
+      );
     });
-  }, [climbs, query, grade]);
+  }, [climbs, query, filters]);
+
+  const hasActiveFilters =
+    query.trim().length > 0 ||
+    filters.name.trim().length > 0 ||
+    filters.grade !== ALL_FILTER_VALUE ||
+    filters.setter.trim().length > 0 ||
+    filters.where.trim().length > 0 ||
+    filters.rating !== "all" ||
+    filters.source !== ALL_FILTER_VALUE;
+
+  const clearFilters = () => {
+    setQuery("");
+    setFilters(DEFAULT_FILTERS);
+    setPage(1);
+  };
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -107,30 +220,20 @@ export default function Climbs() {
               className="pl-9"
             />
           </div>
-          <Select
-            value={grade}
-            onValueChange={(v) => {
-              setGrade(v);
-              setPage(1);
-            }}
+          <Button
+            variant="outline"
+            disabled={!hasActiveFilters}
+            onClick={clearFilters}
+            className="gap-2"
           >
-            <SelectTrigger className="w-full sm:w-48">
-              <SelectValue placeholder="All grades" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All grades</SelectItem>
-              {grades.map((g) => (
-                <SelectItem key={g} value={g}>
-                  {g}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <X className="h-4 w-4" />
+            Clear filters
+          </Button>
         </div>
 
         {error && <p className="text-red-600">Error: {error}</p>}
 
-        <div className="bg-white rounded-lg border shadow-sm">
+        <div className="overflow-x-auto bg-white rounded-lg border shadow-sm">
           <Table>
             <TableHeader>
               <TableRow>
@@ -141,6 +244,100 @@ export default function Climbs() {
                 <TableHead>Rating</TableHead>
                 <TableHead>Source</TableHead>
                 <TableHead className="w-[120px]">Actions</TableHead>
+              </TableRow>
+              <TableRow className="bg-slate-50 hover:bg-slate-50">
+                <TableHead className="min-w-[180px]">
+                  <Input
+                    value={filters.name}
+                    onChange={(event) =>
+                      updateFilter("name", event.target.value)
+                    }
+                    placeholder="Filter name"
+                    className="h-8 bg-white"
+                  />
+                </TableHead>
+                <TableHead className="min-w-[130px]">
+                  <Select
+                    value={filters.grade}
+                    onValueChange={(value) => updateFilter("grade", value)}
+                  >
+                    <SelectTrigger className="h-8 bg-white">
+                      <SelectValue placeholder="Any grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_FILTER_VALUE}>
+                        Any grade
+                      </SelectItem>
+                      {grades.map((g) => (
+                        <SelectItem key={g} value={g}>
+                          {g}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableHead>
+                <TableHead className="min-w-[160px]">
+                  <Input
+                    value={filters.setter}
+                    onChange={(event) =>
+                      updateFilter("setter", event.target.value)
+                    }
+                    placeholder="Filter setter"
+                    className="h-8 bg-white"
+                  />
+                </TableHead>
+                <TableHead className="min-w-[180px]">
+                  <Input
+                    value={filters.where}
+                    onChange={(event) =>
+                      updateFilter("where", event.target.value)
+                    }
+                    placeholder="Filter where"
+                    className="h-8 bg-white"
+                  />
+                </TableHead>
+                <TableHead className="min-w-[140px]">
+                  <Select
+                    value={filters.rating}
+                    onValueChange={(value) =>
+                      updateFilter("rating", value as RatingFilter)
+                    }
+                  >
+                    <SelectTrigger className="h-8 bg-white">
+                      <SelectValue placeholder="Any rating" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any rating</SelectItem>
+                      <SelectItem value="unrated">Unrated</SelectItem>
+                      <SelectItem value="5">5+ stars</SelectItem>
+                      <SelectItem value="4">4+ stars</SelectItem>
+                      <SelectItem value="3">3+ stars</SelectItem>
+                      <SelectItem value="2">2+ stars</SelectItem>
+                      <SelectItem value="1">1+ stars</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </TableHead>
+                <TableHead className="min-w-[160px]">
+                  <Select
+                    value={filters.source}
+                    onValueChange={(value) => updateFilter("source", value)}
+                  >
+                    <SelectTrigger className="h-8 bg-white">
+                      <SelectValue placeholder="Any source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={ALL_FILTER_VALUE}>
+                        Any source
+                      </SelectItem>
+                      {sources.map((source) => (
+                        <SelectItem key={source} value={source}>
+                          {sourceLabel(source)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableHead>
+                <TableHead />
               </TableRow>
             </TableHeader>
             <TableBody>
