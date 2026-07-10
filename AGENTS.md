@@ -38,9 +38,13 @@ TypeScript runs in strict mode. Use `PascalCase` for components, `camelCase` for
 
 ## Testing Guidelines
 
-No automated test project is configured. Before opening a PR, run `dotnet build`, `npm run lint`, and `npm run build`, then manually verify affected endpoints and browser workflows. Add backend tests in `api.Tests/` and frontend tests beside source files as `*.test.tsx`.
+Backend tests live in `api.Tests/`; frontend tests live beside source files as `*.test.ts` or `*.test.tsx`. Run backend unit tests with `dotnet test api.Tests --filter "Category=Unit"` and frontend tests with `npm test` from `web/`. PostgreSQL integration tests require `CLIMBING_LOGBOOK_TEST_CONNECTION_STRING` pointing to a dedicated database whose name contains `test`.
+
+For every application change, explicitly check whether observable behavior, validation, API contracts, persistence, authentication, or UI workflows changed. Add or update the relevant tests whenever they did. If no test change is appropriate, record why in the pull request. Before opening a PR, run the affected tests plus `dotnet build`, `npm run lint`, and `npm run build`, then manually verify workflows that are not automated.
 
 ## Commit & Pull Request Guidelines
+
+Agents must follow `.agents/rules/never-commit.md`: never create commits and leave staging and commits to the user unless the user explicitly requests staging in the current conversation.
 
 Recent commits use short, imperative messages prefixed with `chore:`. Continue that pattern and use a more specific type such as `fix:` or `feat:` when appropriate. Keep each commit focused.
 

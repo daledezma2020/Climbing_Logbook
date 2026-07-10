@@ -17,10 +17,11 @@ Note: `readme.md` says .NET 9, but `api/api.csproj` targets `net8.0` (the real t
 ```bash
 dotnet run                                  # run API (auto-applies pending EF migrations on startup)
 dotnet build                                # build
+dotnet test ../api.Tests --filter "Category=Unit" # fast backend tests
 dotnet ef migrations add <Name>            # create a new migration
 dotnet ef database update                  # apply migrations manually (also auto-applied on startup)
 ```
-There are no backend tests in the repo.
+PostgreSQL integration tests are in `api.Tests/Integration`. Set `CLIMBING_LOGBOOK_TEST_CONNECTION_STRING` to a dedicated database whose name contains `test`, then run `dotnet test ../api.Tests --filter "Category=Integration"`.
 
 The DB connection string (`DefaultConnection`) is stored in .NET user secrets (UserSecretsId in `api.csproj`), not in committed config. Swagger UI is available at `/swagger` in Development.
 
@@ -30,8 +31,14 @@ npm install
 npm run dev        # Vite dev server on :5173
 npm run build      # tsc -b && vite build
 npm run lint       # eslint
+npm test           # run Vitest once
+npm run test:coverage # run tests and create coverage reports
 npm run preview    # preview production build
 ```
+
+## Test maintenance
+
+Every application update must include an explicit test-impact check. When observable behavior, validation, API contracts, persistence, authentication, or UI workflows change, add or update the relevant backend or frontend tests in the same change. If no automated test change makes sense, document the reason and the required manual verification in the pull request.
 
 ## Architecture
 

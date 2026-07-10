@@ -55,6 +55,29 @@ npm run dev
 ```
 Web app runs on `http://localhost:5173`
 
+## Tests
+
+Run fast backend tests from the repository root:
+
+```bash
+dotnet test api.Tests --filter "Category=Unit"
+```
+
+Backend integration tests use real PostgreSQL behavior. Set `CLIMBING_LOGBOOK_TEST_CONNECTION_STRING` to a dedicated database whose name contains `test`, then run:
+
+```bash
+dotnet test api.Tests --filter "Category=Integration"
+```
+
+Run frontend tests from `web/`:
+
+```bash
+npm test
+npm run test:coverage
+```
+
+Whenever application behavior changes, check its test impact and update the corresponding tests. If automation is not appropriate, document the manual verification in the pull request.
+
 ## Development
 
 - API includes Swagger UI at `/swagger` in development mode
