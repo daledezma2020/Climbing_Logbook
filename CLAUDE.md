@@ -15,12 +15,13 @@ Note: `readme.md` says .NET 9, but `api/api.csproj` targets `net8.0` (the real t
 
 ### Backend (`api/`)
 ```bash
-dotnet run                            # run API (auto-applies pending EF migrations on startup)
-dotnet build
-dotnet ef migrations add <Name>
-dotnet ef database update             # also auto-applied on startup
+dotnet run                                  # run API (auto-applies pending EF migrations on startup)
+dotnet build                                # build
+dotnet test ../api.Tests --filter "Category=Unit" # fast backend tests
+dotnet ef migrations add <Name>            # create a new migration
+dotnet ef database update                  # apply migrations manually (also auto-applied on startup)
 ```
-There are no backend tests. Swagger UI is at `/swagger` in Development.
+PostgreSQL integration tests are in `api.Tests/Integration`. Set `CLIMBING_LOGBOOK_TEST_CONNECTION_STRING` to a dedicated database whose name contains `test`, then run `dotnet test ../api.Tests --filter "Category=Integration"`.
 
 Secrets live in .NET user secrets (`UserSecretsId` in `api.csproj`), not committed config: the `DefaultConnection` connection string and the `Auth0:Domain` / `Auth0:Audience` values consumed in `Program.cs`.
 
@@ -32,9 +33,15 @@ npm install
 npm run dev        # Vite dev server on :5173
 npm run build      # tsc -b && vite build
 npm run lint       # eslint
-npm run preview
+npm test           # run Vitest once
+npm run test:coverage # run tests and create coverage reports
+npm run preview    # preview production build
 ```
 Frontend env vars (in `web/.env.local`, not committed): `VITE_API_BASE_URL` (defaults to `http://localhost:5050`), and required Auth0 config `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, `VITE_AUTH0_AUDIENCE`. Without the Auth0 vars, `Auth0ProviderWithConfig` renders a config-required screen instead of the app.
+
+## Test maintenance
+
+Every application update must include an explicit test-impact check. When observable behavior, validation, API contracts, persistence, authentication, or UI workflows change, add or update the relevant backend or frontend tests in the same change. If no automated test change makes sense, document the reason and the required manual verification in the pull request.
 
 ## Architecture
 
