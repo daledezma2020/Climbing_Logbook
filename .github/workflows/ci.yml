@@ -92,7 +92,8 @@ jobs:
         run: npm run test:ci
       - name: Summarize frontend coverage
         if: always()
-        run: node -e "const c=require('./coverage/coverage-summary.json').total; console.log('### Frontend coverage\n\n| Metric | Percent |\n| --- | ---: |\n'+Object.entries(c).map(([k,v])=>'| '+k+' | '+v.pct+'% |').join('\n'))" >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          node -e "const c=require('./coverage/coverage-summary.json').total; console.log('### Frontend coverage\n\n| Metric | Percent |\n| --- | ---: |\n'+Object.entries(c).map(([k,v])=>'| '+k+' | '+v.pct+'% |').join('\n'))" >> "$GITHUB_STEP_SUMMARY"
       - name: Build frontend
         run: npm run build
       - uses: actions/upload-artifact@v4
