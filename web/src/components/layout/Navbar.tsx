@@ -2,7 +2,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import UserAvatar from "@/components/user/UserAvatar";
 import { useCurrentUser } from "@/hooks/user-hooks";
 import {
   Mountain,
@@ -10,6 +10,7 @@ import {
   BookOpen,
   LogIn,
   LogOut,
+  Pencil,
   UserPlus,
 } from "lucide-react";
 
@@ -23,13 +24,7 @@ export default function Navbar() {
   const isActive = (path: string) => location.pathname === path;
   const displayName =
     currentUser?.displayName ?? user?.name ?? user?.email ?? "Signed in";
-  const pictureUrl = currentUser?.pictureUrl ?? user?.picture;
-  const initials = displayName
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  const profilePath = currentUser ? `/users/${currentUser.username}` : null;
   const signIn = async (screenHint?: "signup") => {
     try {
       setAuthError(null);
@@ -102,15 +97,28 @@ export default function Navbar() {
               <div className="h-9 w-36 rounded-md bg-slate-100" />
             ) : isAuthenticated ? (
               <>
-                <div className="hidden items-center gap-2 sm:flex">
-                  <Avatar>
-                    <AvatarImage src={pictureUrl ?? undefined} alt={displayName} />
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
+                <Link
+                  to={profilePath ?? "/profile/edit"}
+                  className="hidden items-center gap-2 rounded-md px-2 py-1 transition hover:bg-slate-100 sm:flex"
+                >
+                  <UserAvatar
+                    displayName={displayName}
+                    pictureUrl={currentUser?.pictureUrl}
+                    fallbackPictureUrl={user?.picture}
+                  />
                   <span className="max-w-40 truncate text-sm font-medium text-slate-700">
                     {displayName}
                   </span>
-                </div>
+                </Link>
+                <Link to="/profile/edit">
+                  <Button
+                    variant={isActive("/profile/edit") ? "default" : "ghost"}
+                    className="gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit profile
+                  </Button>
+                </Link>
                 <Button
                   variant="outline"
                   className="gap-2"

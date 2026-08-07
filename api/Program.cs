@@ -2,6 +2,7 @@ using api.Interfaces;
 using api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text.Json;
@@ -48,6 +49,7 @@ builder.Services.AddScoped<ISeedingService, SeedingService>();
 builder.Services.AddScoped<ISetterService, SetterService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAvatarStorage, LocalDiskAvatarStorage>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<IOpenBetaClient, OpenBetaClient>();
 builder.Services.AddHttpClient<IOsmClient, OsmClient>();
@@ -76,6 +78,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors("AllowReactApp"); // Enable CORS
+
+var avatarRoot = LocalDiskAvatarStorage.ResolveRoot(app.Configuration, app.Environment);
+Directory.CreateDirectory(avatarRoot);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(avatarRoot),
+    RequestPath = LocalDiskAvatarStorage.RequestPath
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 

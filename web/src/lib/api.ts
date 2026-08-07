@@ -6,6 +6,16 @@ type ApiFetchOptions = RequestInit & {
   accessToken?: string;
 };
 
+export class ApiError extends Error {
+  readonly status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 function formatApiError(status: number, errorData: unknown): string {
   if (typeof errorData === "string" && errorData.trim()) {
     return errorData;
@@ -45,7 +55,10 @@ export async function apiFetch<T>(
   const { accessToken, headers: optionHeaders, ...requestOptions } = options;
   const headers = new Headers(optionHeaders);
 
-  if (!headers.has("Content-Type") && requestOptions.body) {
+  // FormData bodies must keep the browser-generated multipart boundary.
+  const isFormData = requestOptions.body instanceof FormData;
+
+  if (!headers.has("Content-Type") && requestOptions.body && !isFormData) {
     headers.set("Content-Type", "application/json");
   }
 
@@ -69,8 +82,9 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
+    throw new ApiError(
       `${formatApiError(response.status, errorData)} Endpoint: ${path}.`,
+      response.status,
     );
   }
 

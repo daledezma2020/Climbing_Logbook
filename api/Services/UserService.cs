@@ -1,31 +1,47 @@
+using api.DTO;
 using api.Interfaces;
 using api.Models;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace api.Services;
 
-public class UserService : IUserService
+public partial class UserService : IUserService
 {
     private const int MaxUsernameLength = 50;
+    private const int MinUsernameLength = 3;
     private const int MaxUsernameBaseLength = 40;
     private const string FallbackUsernameBase = "climber";
+    private static readonly HashSet<string> ReservedUsernames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "me", "profile", "profiles", "users", "admin", "settings", "new", "edit", "login", "logout"
+    };
+
+    [GeneratedRegex("^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$")]
+    private static partial Regex UsernamePattern();
 
     private readonly ApplicationDbContext _context;
     private readonly IAuth0UserInfoClient _userInfoClient;
+    private readonly ICatalogService _catalogService;
+    private readonly IAvatarStorage _avatarStorage;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<UserService> _logger;
 
     public UserService(
         ApplicationDbContext context,
         IAuth0UserInfoClient userInfoClient,
+        ICatalogService catalogService,
+        IAvatarStorage avatarStorage,
         IHttpContextAccessor httpContextAccessor,
         ILogger<UserService> logger)
     {
         _context = context;
         _userInfoClient = userInfoClient;
+        _catalogService = catalogService;
+        _avatarStorage = avatarStorage;
         _httpContextAccessor = httpContextAccessor;
         _logger = logger;
     }
@@ -85,6 +101,130 @@ public class UserService : IUserService
         }
 
         throw new InvalidOperationException("Could not provision a user record after repeated username collisions.");
+    }
+
+    public Task<AppUser?> FindByUsernameAsync(string username, CancellationToken cancellationToken = default)
+    {
+        var normalized = (username ?? string.Empty).Trim().ToLowerInvariant();
+        return _context.AppUsers
+            .Include(u => u.HomePlace)
+            .FirstOrDefaultAsync(u => u.Username.ToLower() == normalized, cancellationToken);
+    }
+
+    public async Task<UserProfileDto> GetProfileAsync(
+        AppUser user,
+        bool includePrivate,
+        CancellationToken cancellationToken = default)
+    {
+        return new UserProfileDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            DisplayName = user.DisplayName,
+            Email = includePrivate ? user.Email : null,
+            Bio = user.Bio,
+            PictureUrl = user.PictureUrl,
+            HomePlaceId = user.HomePlaceId,
+            HomePlace = user.HomePlace == null ? null : CatalogMapping.ToDto(user.HomePlace),
+            CreatedAt = user.CreatedAt,
+            Stats = await _catalogService.GetUserStatsAsync(user.Id, cancellationToken)
+        };
+    }
+
+    public async Task<AppUser> UpdateProfileAsync(
+        int userId,
+        UpdateUserProfileDto dto,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await _context.AppUsers
+            .Include(u => u.HomePlace)
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken)
+            ?? throw new ProfileValidationException("The signed-in user no longer exists.");
+
+        var username = (dto.Username ?? string.Empty).Trim();
+        ValidateUsername(username);
+
+        if (!string.Equals(username, user.Username, StringComparison.OrdinalIgnoreCase))
+        {
+            var normalized = username.ToLowerInvariant();
+            var taken = await _context.AppUsers
+                .AnyAsync(u => u.Id != userId && u.Username.ToLower() == normalized, cancellationToken);
+            if (taken)
+            {
+                throw new UsernameConflictException(username);
+            }
+        }
+
+        Place? homePlace = null;
+        if (dto.HomePlaceId.HasValue)
+        {
+            homePlace = await _context.Places
+                .FirstOrDefaultAsync(p => p.Id == dto.HomePlaceId.Value, cancellationToken)
+                ?? throw new ProfileValidationException("The selected home place does not exist.");
+        }
+
+        var displayName = (dto.DisplayName ?? string.Empty).Trim();
+        if (displayName.Length == 0)
+        {
+            throw new ProfileValidationException("Enter a display name.");
+        }
+
+        user.Username = username;
+        user.DisplayName = displayName;
+        user.Bio = string.IsNullOrWhiteSpace(dto.Bio) ? null : dto.Bio.Trim();
+        user.PictureUrl = string.IsNullOrWhiteSpace(dto.PictureUrl) ? null : dto.PictureUrl.Trim();
+        user.HomePlaceId = dto.HomePlaceId;
+        user.HomePlace = homePlace;
+        user.UpdatedAt = DateTime.UtcNow;
+
+        try
+        {
+            await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex) when (IsUniqueViolation(ex))
+        {
+            // Backstop for a concurrent claim of the same username; the DB owns the
+            // case-insensitive guarantee via IX_AppUsers_Username_Lower.
+            throw new UsernameConflictException(username);
+        }
+
+        return user;
+    }
+
+    public async Task<AppUser> SetAvatarAsync(int userId, IFormFile file, CancellationToken cancellationToken = default)
+    {
+        var user = await _context.AppUsers
+            .Include(u => u.HomePlace)
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken)
+            ?? throw new ProfileValidationException("The signed-in user no longer exists.");
+
+        var previous = user.PictureUrl;
+        user.PictureUrl = await _avatarStorage.SaveAsync(file, cancellationToken);
+        user.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync(cancellationToken);
+
+        await _avatarStorage.DeleteAsync(previous, cancellationToken);
+        return user;
+    }
+
+    private static void ValidateUsername(string username)
+    {
+        if (username.Length is < MinUsernameLength or > MaxUsernameLength)
+        {
+            throw new ProfileValidationException(
+                $"Usernames must be between {MinUsernameLength} and {MaxUsernameLength} characters.");
+        }
+
+        if (!UsernamePattern().IsMatch(username))
+        {
+            throw new ProfileValidationException(
+                "Usernames may only use lowercase letters, numbers, hyphens, and underscores, and must start and end with a letter or number.");
+        }
+
+        if (ReservedUsernames.Contains(username))
+        {
+            throw new ProfileValidationException($"\"{username}\" is reserved and cannot be used as a username.");
+        }
     }
 
     private async Task<Auth0UserInfo> ResolveProfileAsync(ClaimsPrincipal principal, CancellationToken cancellationToken)

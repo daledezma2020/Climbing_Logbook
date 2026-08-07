@@ -63,20 +63,43 @@ Web app runs on `http://localhost:5173`
 
 ## Image storage
 
-There is no server-side image storage in this application. Every image is a URL string
-pointing at an external host, and nothing is uploaded to or served by this API.
+Avatars are the only images this API stores. Everything else is still a URL string pointing at
+an external host.
 
-- User avatars default to the Auth0 `picture` claim. `AppUser.PictureUrl` holds an optional
-  user-supplied URL that overrides it.
-- `Climb.PictureUrl` and `Climb.VideoUrl` work the same way.
+- `Climb.PictureUrl` and `Climb.VideoUrl` are URL-only. Nothing is uploaded or served for them.
+- User avatars resolve in three tiers: `AppUser.PictureUrl` if set, otherwise the Auth0
+  `picture` claim, otherwise generated initials.
 
-Supporting real file uploads is deliberately deferred. It is not a small addition, and none of
-it exists yet:
+### Avatar uploads
 
-- an upload endpoint on the API
-- file-type and file-size validation
-- a storage backend (S3, Azure Blob, or local disk) with the matching configuration
-- a serving path for the stored files
+`POST /api/users/me/avatar` accepts a multipart `file` field and writes it to local disk.
 
-This is a prerequisite for the avatar upload button on the profile page. Until it is built,
-the profile page can only accept a URL.
+- Accepted types are JPEG, PNG, and WebP. The type is determined by sniffing the file's magic
+  bytes, and the stored extension comes from that sniff, never from the client-supplied
+  filename.
+- The default size cap is 2 MB.
+- Files are written to the directory named by `Storage:AvatarPath` (default `uploads/avatars`,
+  relative to the API content root) under a generated GUID filename, and served back at
+  `/uploads/avatars/{file}`. Replacing an avatar deletes the previously stored file.
+- Uploading sets `AppUser.PictureUrl` to the served URL, so the tiers above are unchanged.
+
+```json
+"Storage": {
+  "AvatarPath": "uploads/avatars",
+  "AvatarMaxBytes": 2097152
+}
+```
+
+The upload directory is created on startup and is gitignored. This is local-disk storage only.
+Moving to S3 or Azure Blob means adding another `IAvatarStorage` implementation; nothing outside
+that interface assumes a filesystem.
+
+## User endpoints
+
+- `GET /api/users/{username}` - public profile with aggregate stats and recent activity.
+- `GET /api/users/me` - the caller's own profile, including their email. Requires a bearer token.
+- `PUT /api/users/me` - update display name, username, bio, avatar URL, and home place. The user
+  is resolved from the token; a client-supplied id is ignored. Returns 409 when the username is
+  already taken.
+- `POST /api/users/me/avatar` - avatar upload, described above.
+- `GET /api/users/{username}/logentries?skip=0&take=25` - that user's log entries, paged.

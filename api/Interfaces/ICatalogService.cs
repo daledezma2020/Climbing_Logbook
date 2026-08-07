@@ -15,6 +15,8 @@ public interface ICatalogService
     Task<PlaceSummaryDto?> ImportOsmPlaceAsync(string osmType, string osmId);
     Task<List<BoardConfigurationDto>> GetBoardConfigurationsAsync();
     Task<List<LogEntryDto>> GetLogEntriesAsync(int? userId = null);
+    Task<PagedResult<LogEntryDto>> GetLogEntriesPagedAsync(int? userId, int skip, int take, CancellationToken cancellationToken = default);
+    Task<UserStatsDto> GetUserStatsAsync(int userId, CancellationToken cancellationToken = default);
     Task<LogEntryDto> CreateLogEntryAsync(CreateLogEntryDto dto, int userId);
     Task<SearchResponseDto> SearchAsync(string query, int limit);
 }
