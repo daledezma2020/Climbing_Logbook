@@ -64,9 +64,14 @@ Controllers are thin and delegate to services registered in `Program.cs`. Routes
 - **Seeding**: `SeedingController` / `SeedingService` load `api/seeding/*.json` (benchmarks, locations, setters — Moonboard data) via POST endpoints under `api/seeding`.
 - When adding a field to a climb, update the model, `CreateManualClimbDto`, the entity-building block in `CreateManualClimbAsync`, and `CatalogMapping` — mapping is explicit in both directions, so a missed spot silently won't round-trip.
 
-### Auth
-- API: `Program.cs` configures JWT bearer auth against Auth0 (`Authority` = `https://{Auth0:Domain}/`, `Audience` = `Auth0:Audience`). Mutating endpoints (`POST`/`DELETE` on climbs, log entries, etc.) carry `[Authorize]`; reads are anonymous. `AuthController.Me` echoes the caller's claims.
-- Web: `Auth0ProviderWithConfig` wraps the app in `main.tsx`. Two ways to attach a token: pass `accessToken` (obtained via `getAccessTokenSilently()`) into `apiFetch` options (see the mutation helpers in `catalog-hooks.ts`), or use the `useAuthenticatedApi().fetchWithAuth` helper. Read hooks call `apiFetch` without a token.
+- **Controllers** (`Controllers/`) are thin: validate `ModelState`, map DTO ↔ model, delegate to the service, and wrap everything in try/catch that logs and returns 500. Routes follow `api/[controller]`.
+- **Services** (`Services/`) contain all data access; controllers never touch `ApplicationDbContext` directly.
+- **DTOs** (`DTO/`) are used for inbound POST/PUT bodies (e.g. `ClimbRouteDto`); controllers manually map DTO fields onto entity models. When adding a field to an entity, update the model, the DTO, **and** both the create and update mapping blocks in the controller — `UpdateClimbRouteAsync` copies fields explicitly, so a missing field there silently won't persist.
+- **Models** (`Models/`) use DataAnnotations for validation. Relationships are configured in `ApplicationDbContext.OnModelCreating`: ClimbRoute→Comments cascades on delete; ClimbRoute→Location and ClimbRoute→Setter use `Restrict` and have nullable FKs.
+- **Migrations** are auto-applied at startup in `Program.cs` (`db.Database.Migrate()` for any pending migrations). JSON responses use camelCase.
+- **Images**: there is no server-side image storage. `AppUser.PictureUrl`, `Climb.PictureUrl`, and `Climb.VideoUrl` are URL strings pointing at external hosts; avatars fall back to the Auth0 `picture` claim. Upload plumbing is deliberately deferred — see the "Image storage" section in `readme.md`.
+- **Identity**: `AppUser` is the local user record, keyed to Auth0 by a unique `Auth0Subject`. Rows are provisioned just-in-time by `IUserService.EnsureUserAsync(ClaimsPrincipal)`, called from `AuthController.Me()` and from the log-entry write path. `LogEntry.UserId` and `Comment.UserId` are resolved server-side from the token and are never accepted from the client.
+- **Seeding**: `SeedingController` / `SeedingService` load `seeding/*.json` (benchmarks, locations, setters — Moonboard data) via POST endpoints under `api/seeding`.
 
 ### Frontend — pages + custom data hooks
 - **Routing** (`src/App.tsx`): `createBrowserRouter` with a shared `Layout`. Pages: `Home`, `Logbook`, `Climbs`, `LogClimb` (route `log/new`).

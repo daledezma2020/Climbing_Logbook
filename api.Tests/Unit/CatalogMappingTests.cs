@@ -7,6 +7,45 @@ public class CatalogMappingTests
 {
     [Fact]
     [Trait("Category", "Unit")]
+    public void LogEntryMappingExposesItsAuthorSummary()
+    {
+        var entry = new LogEntry
+        {
+            Id = 3,
+            ClimbId = 9,
+            UserId = 5,
+            User = new AppUser
+            {
+                Id = 5,
+                Username = "alex",
+                DisplayName = "Alex Climber",
+                PictureUrl = "https://example.test/alex.png",
+                Email = "alex@example.test",
+                Auth0Subject = "auth0|123"
+            }
+        };
+
+        var result = CatalogMapping.ToDto(entry);
+
+        Assert.Equal(5, result.UserId);
+        Assert.NotNull(result.User);
+        Assert.Equal("alex", result.User.Username);
+        Assert.Equal("Alex Climber", result.User.DisplayName);
+        Assert.Equal("https://example.test/alex.png", result.User.PictureUrl);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void LogEntryMappingToleratesAnUnloadedAuthor()
+    {
+        var result = CatalogMapping.ToDto(new LogEntry { Id = 3, UserId = 5, User = null });
+
+        Assert.Equal(5, result.UserId);
+        Assert.Null(result.User);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public void ClimbMappingExposesContextRatingAndDistinctSources()
     {
         var climb = new Climb

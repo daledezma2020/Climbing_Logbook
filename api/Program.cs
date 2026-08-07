@@ -47,8 +47,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<ISeedingService, SeedingService>();
 builder.Services.AddScoped<ISetterService, SetterService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<IOpenBetaClient, OpenBetaClient>();
 builder.Services.AddHttpClient<IOsmClient, OsmClient>();
+builder.Services.AddHttpClient<IAuth0UserInfoClient, Auth0UserInfoClient>();
 
 // Add CORS
 builder.Services.AddCors(options =>

@@ -1,3 +1,5 @@
+import type { UserSummary } from "@/types/user";
+
 export type ClimbDiscipline = "Bouldering" | "Sport" | "Trad" | "Other";
 export type GradeSystem = "VScale" | "Yds" | "French" | "Font" | "Other";
 export type PlaceKind = "Gym" | "Outdoor" | "Custom";
@@ -50,6 +52,8 @@ export interface Climb {
 
 export interface LogEntry {
   id: number;
+  userId: number;
+  user: UserSummary | null;
   climbId: number;
   climb: Climb | null;
   placeId: number | null;

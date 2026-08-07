@@ -1,6 +1,8 @@
 using api.DTO;
 using api.Interfaces;
+using api.Models;
 using api.Services;
+using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Npgsql;
@@ -52,6 +54,37 @@ public sealed class PostgresDatabaseFixture : IAsyncLifetime
             NullLogger<CatalogService>.Instance);
     }
 
+    public async Task<int> CreateUserAsync(string username = "testclimber")
+    {
+        await using var context = CreateContext();
+        var user = new AppUser
+        {
+            Auth0Subject = $"auth0|{username}",
+            Username = username,
+            DisplayName = username
+        };
+        context.AppUsers.Add(user);
+        await context.SaveChangesAsync();
+        return user.Id;
+    }
+
+    public UserService CreateUserService(IAuth0UserInfoClient? userInfo = null, string? bearerToken = null)
+    {
+        var httpContextAccessor = new HttpContextAccessor();
+        if (bearerToken != null)
+        {
+            var httpContext = new DefaultHttpContext();
+            httpContext.Request.Headers.Authorization = $"Bearer {bearerToken}";
+            httpContextAccessor.HttpContext = httpContext;
+        }
+
+        return new UserService(
+            CreateContext(),
+            userInfo ?? new StubAuth0UserInfoClient(),
+            httpContextAccessor,
+            NullLogger<UserService>.Instance);
+    }
+
     public async Task ResetAsync()
     {
         await using var context = CreateContext();
@@ -92,4 +125,16 @@ internal sealed class StubOsmClient : IOsmClient
 
     public Task<OsmPlaceDetails?> GetPlaceAsync(string osmType, string osmId, CancellationToken cancellationToken)
         => Task.FromResult(Place);
+}
+
+internal sealed class StubAuth0UserInfoClient : IAuth0UserInfoClient
+{
+    public Auth0UserInfo? UserInfo { get; set; }
+    public int CallCount { get; private set; }
+
+    public Task<Auth0UserInfo?> GetUserInfoAsync(string accessToken, CancellationToken cancellationToken)
+    {
+        CallCount++;
+        return Task.FromResult(UserInfo);
+    }
 }

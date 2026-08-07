@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ClimbExternalReference> ClimbExternalReferences { get; set; } = null!;
     public DbSet<PlaceExternalReference> PlaceExternalReferences { get; set; } = null!;
     public DbSet<Setter> Setters { get; set; } = null!;
+    public DbSet<AppUser> AppUsers { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,6 +78,28 @@ public class ApplicationDbContext : DbContext
             .WithMany(p => p.Children)
             .HasForeignKey(p => p.ParentPlaceId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AppUser>()
+            .HasOne(u => u.HomePlace)
+            .WithMany()
+            .HasForeignKey(u => u.HomePlaceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AppUser>()
+            .HasIndex(u => u.Auth0Subject)
+            .IsUnique();
+
+        modelBuilder.Entity<LogEntry>()
+            .HasOne(l => l.User)
+            .WithMany(u => u.LogEntries)
+            .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Comment>()
+            .HasOne(c => c.User)
+            .WithMany(u => u.Comments)
+            .HasForeignKey(c => c.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<LogEntry>()
             .HasOne(l => l.Climb)

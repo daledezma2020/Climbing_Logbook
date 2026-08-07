@@ -243,15 +243,22 @@ public class CatalogService : ICatalogService
         return boards.Select(CatalogMapping.ToDto).ToList();
     }
 
-    public async Task<List<LogEntryDto>> GetLogEntriesAsync()
+    public async Task<List<LogEntryDto>> GetLogEntriesAsync(int? userId = null)
     {
-        var entries = await IncludeLogEntrySummary(_context.LogEntries)
+        var query = IncludeLogEntrySummary(_context.LogEntries);
+
+        if (userId.HasValue)
+        {
+            query = query.Where(l => l.UserId == userId.Value);
+        }
+
+        var entries = await query
             .OrderByDescending(l => l.OccurredAt)
             .ToListAsync();
         return entries.Select(CatalogMapping.ToDto).ToList();
     }
 
-    public async Task<LogEntryDto> CreateLogEntryAsync(CreateLogEntryDto dto)
+    public async Task<LogEntryDto> CreateLogEntryAsync(CreateLogEntryDto dto, int userId)
     {
         if (!await _context.Climbs.AnyAsync(c => c.Id == dto.ClimbId))
         {
@@ -267,6 +274,7 @@ public class CatalogService : ICatalogService
         {
             ClimbId = dto.ClimbId,
             PlaceId = dto.PlaceId,
+            UserId = userId,
             OccurredAt = dto.OccurredAt ?? DateTime.UtcNow,
             Status = dto.Status,
             Rating = dto.Rating,
@@ -379,6 +387,7 @@ public class CatalogService : ICatalogService
     private static IQueryable<LogEntry> IncludeLogEntrySummary(IQueryable<LogEntry> query)
     {
         return query
+            .Include(l => l.User)
             .Include(l => l.Place)
             .Include(l => l.Climb)!.ThenInclude(c => c!.Place)
             .Include(l => l.Climb)!.ThenInclude(c => c!.BoardConfiguration)

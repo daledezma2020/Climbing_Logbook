@@ -32,6 +32,7 @@ public class CatalogServiceIntegrationTests(PostgresDatabaseFixture database) : 
             SetterName = "  Alex  "
         });
         var occurredAt = new DateTime(2026, 7, 1, 18, 30, 0, DateTimeKind.Utc);
+        var userId = await database.CreateUserAsync();
         var entry = await catalog.CreateLogEntryAsync(new CreateLogEntryDto
         {
             ClimbId = climb.Id,
@@ -39,7 +40,7 @@ public class CatalogServiceIntegrationTests(PostgresDatabaseFixture database) : 
             Status = LogEntryStatus.Completed,
             Rating = 5,
             Notes = "Felt solid"
-        });
+        }, userId);
 
         var retrieved = await catalog.GetClimbAsync(climb.Id);
         var logbook = await catalog.GetLogEntriesAsync();
@@ -194,7 +195,9 @@ public class CatalogServiceIntegrationTests(PostgresDatabaseFixture database) : 
             Grade = "V0",
             BoardConfigurationName = "Test Board"
         });
-        await catalog.CreateLogEntryAsync(new CreateLogEntryDto { ClimbId = climb.Id, Rating = 3 });
+        await catalog.CreateLogEntryAsync(
+            new CreateLogEntryDto { ClimbId = climb.Id, Rating = 3 },
+            await database.CreateUserAsync());
 
         Assert.True(await catalog.DeleteClimbAsync(climb.Id));
         Assert.Empty(await catalog.GetLogEntriesAsync());
@@ -239,7 +242,9 @@ public class CatalogServiceIntegrationTests(PostgresDatabaseFixture database) : 
             Name = "Alpha Problem", Grade = "V2", BoardConfigurationName = "Board"
         });
         var before = DateTime.UtcNow;
-        var entry = await catalog.CreateLogEntryAsync(new CreateLogEntryDto { ClimbId = zeta.Id });
+        var entry = await catalog.CreateLogEntryAsync(
+            new CreateLogEntryDto { ClimbId = zeta.Id },
+            await database.CreateUserAsync());
         var after = DateTime.UtcNow;
 
         Assert.Equal(["Alpha Crag", "Zeta Gym"], (await catalog.GetPlacesAsync()).Select(x => x.Name));
@@ -257,15 +262,16 @@ public class CatalogServiceIntegrationTests(PostgresDatabaseFixture database) : 
         {
             Name = "Unmapped", Kind = PlaceKind.Custom
         }));
+        var userId = await database.CreateUserAsync();
         var missingClimb = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            catalog.CreateLogEntryAsync(new CreateLogEntryDto { ClimbId = 999 }));
+            catalog.CreateLogEntryAsync(new CreateLogEntryDto { ClimbId = 999 }, userId));
 
         var climb = await catalog.CreateManualClimbAsync(new CreateManualClimbDto
         {
             Name = "Board Problem", Grade = "V1", BoardConfigurationName = "Board"
         });
         var missingPlace = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            catalog.CreateLogEntryAsync(new CreateLogEntryDto { ClimbId = climb.Id, PlaceId = 999 }));
+            catalog.CreateLogEntryAsync(new CreateLogEntryDto { ClimbId = climb.Id, PlaceId = 999 }, userId));
 
         Assert.Equal("Climb not found.", missingClimb.Message);
         Assert.Equal("Place not found.", missingPlace.Message);
