@@ -10,7 +10,7 @@ import {
   useSearch,
 } from "@/hooks/catalog-hooks";
 import { apiFetch } from "@/lib/api";
-import { climb } from "@/test/fixtures";
+import { climb, logEntry } from "@/test/fixtures";
 
 const auth = vi.hoisted(() => ({
   getAccessTokenSilently: vi.fn(),
@@ -96,6 +96,23 @@ describe("catalog hooks", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(result.current.entries).toEqual([]);
     expect(result.current.error).toBe("API unavailable");
+  });
+
+  it("loads the whole logbook when no owner is given", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce([logEntry()]);
+    const { result } = renderHook(() => useLogEntries());
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(apiFetch).toHaveBeenCalledWith("/logentries");
+    expect(result.current.entries[0].user?.username).toBe("alex");
+  });
+
+  it("scopes the logbook to one owner when a user id is given", async () => {
+    vi.mocked(apiFetch).mockResolvedValueOnce([logEntry()]);
+    const { result } = renderHook(() => useLogEntries(5));
+
+    await waitFor(() => expect(result.current.loading).toBe(false));
+    expect(apiFetch).toHaveBeenCalledWith("/logentries?userId=5");
   });
 
   it("loads places and board configurations", async () => {

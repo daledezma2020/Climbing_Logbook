@@ -68,6 +68,43 @@ public class ControllerResultTests
 
     [Fact]
     [Trait("Category", "Unit")]
+    public async Task LogEntryCreationAttributesTheEntryToTheAuthenticatedUser()
+    {
+        var service = new CatalogServiceStub();
+        var userService = new UserServiceStub { User = new AppUser { Id = 12, Username = "alex", DisplayName = "Alex" } };
+        var controller = new LogEntriesController(service, userService);
+
+        var result = Assert.IsType<CreatedAtActionResult>(
+            (await controller.CreateLogEntry(new CreateLogEntryDto { ClimbId = 3 }, CancellationToken.None)).Result);
+
+        Assert.Equal(12, service.LastCreatedForUserId);
+        Assert.Equal(12, Assert.IsType<LogEntryDto>(result.Value).UserId);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void CreateLogEntryDtoCannotCarryAClientSuppliedOwner()
+    {
+        Assert.Null(typeof(CreateLogEntryDto).GetProperty("UserId"));
+        Assert.Null(typeof(CreateLogEntryDto).GetProperty("User"));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task LogEntryReadsPassTheOptionalOwnerFilterThrough()
+    {
+        var service = new CatalogServiceStub();
+        var controller = new LogEntriesController(service, new UserServiceStub());
+
+        await controller.GetLogEntries(null);
+        Assert.Null(service.LastRequestedUserId);
+
+        await controller.GetLogEntries(9);
+        Assert.Equal(9, service.LastRequestedUserId);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
     public async Task SetterControllerTranslatesServiceOutcomes()
     {
         var service = new SetterServiceStub();
@@ -97,8 +134,20 @@ public class ControllerResultTests
         public Task<PlaceSummaryDto> CreatePlaceAsync(CreatePlaceDto dto) => Task.FromResult(Place!);
         public Task<PlaceSummaryDto?> ImportOsmPlaceAsync(string osmType, string osmId) => Task.FromResult(Place);
         public Task<List<BoardConfigurationDto>> GetBoardConfigurationsAsync() => Task.FromResult(new List<BoardConfigurationDto>());
-        public Task<List<LogEntryDto>> GetLogEntriesAsync() => Task.FromResult(new List<LogEntryDto>());
-        public Task<LogEntryDto> CreateLogEntryAsync(CreateLogEntryDto dto) => Task.FromResult(new LogEntryDto { Id = 1, ClimbId = dto.ClimbId });
+        public int? LastRequestedUserId { get; private set; }
+        public int? LastCreatedForUserId { get; private set; }
+
+        public Task<List<LogEntryDto>> GetLogEntriesAsync(int? userId = null)
+        {
+            LastRequestedUserId = userId;
+            return Task.FromResult(new List<LogEntryDto>());
+        }
+
+        public Task<LogEntryDto> CreateLogEntryAsync(CreateLogEntryDto dto, int userId)
+        {
+            LastCreatedForUserId = userId;
+            return Task.FromResult(new LogEntryDto { Id = 1, ClimbId = dto.ClimbId, UserId = userId });
+        }
         public Task<SearchResponseDto> SearchAsync(string query, int limit) => Task.FromResult(new SearchResponseDto());
     }
 
