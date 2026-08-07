@@ -60,3 +60,23 @@ Web app runs on `http://localhost:5173`
 - API includes Swagger UI at `/swagger` in development mode
 - CORS configured to allow frontend at `localhost:5173`
 - Database on local during development is PostgresSQL (Using user secrets to store connection string)
+
+## Image storage
+
+There is no server-side image storage in this application. Every image is a URL string
+pointing at an external host, and nothing is uploaded to or served by this API.
+
+- User avatars default to the Auth0 `picture` claim. `AppUser.PictureUrl` holds an optional
+  user-supplied URL that overrides it.
+- `Climb.PictureUrl` and `Climb.VideoUrl` work the same way.
+
+Supporting real file uploads is deliberately deferred. It is not a small addition, and none of
+it exists yet:
+
+- an upload endpoint on the API
+- file-type and file-size validation
+- a storage backend (S3, Azure Blob, or local disk) with the matching configuration
+- a serving path for the stored files
+
+This is a prerequisite for the avatar upload button on the profile page. Until it is built,
+the profile page can only accept a URL.

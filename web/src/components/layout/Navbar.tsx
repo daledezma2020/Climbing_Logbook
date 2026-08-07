@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useCurrentUser } from "@/hooks/user-hooks";
 import {
   Mountain,
   Home as HomeIcon,
@@ -17,9 +18,12 @@ export default function Navbar() {
   const { loginWithRedirect, logout, user, isAuthenticated, isLoading } =
     useAuth0();
   const [authError, setAuthError] = useState<string | null>(null);
+  const { user: currentUser } = useCurrentUser();
 
   const isActive = (path: string) => location.pathname === path;
-  const displayName = user?.name ?? user?.email ?? "Signed in";
+  const displayName =
+    currentUser?.displayName ?? user?.name ?? user?.email ?? "Signed in";
+  const pictureUrl = currentUser?.pictureUrl ?? user?.picture;
   const initials = displayName
     .split(" ")
     .map((part) => part[0])
@@ -100,7 +104,7 @@ export default function Navbar() {
               <>
                 <div className="hidden items-center gap-2 sm:flex">
                   <Avatar>
-                    <AvatarImage src={user?.picture} alt={displayName} />
+                    <AvatarImage src={pictureUrl ?? undefined} alt={displayName} />
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                   <span className="max-w-40 truncate text-sm font-medium text-slate-700">

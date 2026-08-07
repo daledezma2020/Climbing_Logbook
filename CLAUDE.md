@@ -45,6 +45,8 @@ Each domain entity (ClimbRoute, Location, Setter) follows the same flow:
 - **DTOs** (`DTO/`) are used for inbound POST/PUT bodies (e.g. `ClimbRouteDto`); controllers manually map DTO fields onto entity models. When adding a field to an entity, update the model, the DTO, **and** both the create and update mapping blocks in the controller — `UpdateClimbRouteAsync` copies fields explicitly, so a missing field there silently won't persist.
 - **Models** (`Models/`) use DataAnnotations for validation. Relationships are configured in `ApplicationDbContext.OnModelCreating`: ClimbRoute→Comments cascades on delete; ClimbRoute→Location and ClimbRoute→Setter use `Restrict` and have nullable FKs.
 - **Migrations** are auto-applied at startup in `Program.cs` (`db.Database.Migrate()` for any pending migrations). JSON responses use camelCase.
+- **Images**: there is no server-side image storage. `AppUser.PictureUrl`, `Climb.PictureUrl`, and `Climb.VideoUrl` are URL strings pointing at external hosts; avatars fall back to the Auth0 `picture` claim. Upload plumbing is deliberately deferred — see the "Image storage" section in `readme.md`.
+- **Identity**: `AppUser` is the local user record, keyed to Auth0 by a unique `Auth0Subject`. Rows are provisioned just-in-time by `IUserService.EnsureUserAsync(ClaimsPrincipal)`, called from `AuthController.Me()` and from the log-entry write path. `LogEntry.UserId` and `Comment.UserId` are resolved server-side from the token and are never accepted from the client.
 - **Seeding**: `SeedingController` / `SeedingService` load `seeding/*.json` (benchmarks, locations, setters — Moonboard data) via POST endpoints under `api/seeding`.
 
 ### Frontend — pages + custom data hooks

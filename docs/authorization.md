@@ -232,7 +232,8 @@ These are the main places to look when reviewing or changing authorization.
 - `web/src/components/layout/Navbar.tsx`: Shows sign-in, sign-up, sign-out, and signed-in user information.
 - `web/src/lib/api.ts`: Central API helper that can attach an Auth0 access token to protected requests.
 - `web/src/hooks/catalog-hooks.ts`: Contains frontend data actions for climbs, log entries, places, and imports. Protected actions get an access token before calling the API.
-- `web/src/hooks/useAuthenticatedApi.ts`: Small helper for making authenticated API requests.
+- `web/src/hooks/useAuthenticatedApi.ts`: Small helper for making authenticated API requests. Currently unused; prefer `apiFetch` from `web/src/lib/api.ts`.
+- `web/src/hooks/user-hooks.ts`: Calls `GET /api/auth/me` once the user is authenticated. This is what triggers provisioning on sign-in, and it is used by the navbar.
 - `web/src/pages/LogClimb.tsx`: Example page that requires sign-in before letting a user log or import a climb.
 - `web/src/components/log/LogEntryForm.tsx`: Gets an access token before creating a log entry.
 - `web/src/components/log/ManualClimbForm.tsx`: Gets an access token before creating a manual climb.
@@ -243,7 +244,9 @@ These are the main places to look when reviewing or changing authorization.
 - `api/Program.cs`: Configures JWT bearer authentication, authorization, CORS, and the Auth0 domain/audience settings used to validate tokens.
 - `api/appsettings.json`: Contains placeholders for the backend Auth0 configuration.
 - `api/api.csproj`: Includes the ASP.NET Core JWT bearer authentication package.
-- `api/Controllers/AuthController.cs`: Provides a protected endpoint that returns basic information about the authenticated user from the token.
+- `api/Controllers/AuthController.cs`: Provides a protected endpoint that provisions and returns the persisted `AppUser` record for the authenticated caller.
+- `api/Services/UserService.cs`: Looks up the `AppUser` by Auth0 subject and creates it on first contact, deriving a unique username and seeding the display name, email, and avatar.
+- `api/Services/Auth0UserInfoClient.cs`: Fetches `name`, `email`, and `picture` from Auth0's `/userinfo` endpoint when the access token does not carry them. A failed lookup is logged and does not block provisioning.
 - `api/Controllers/ClimbsController.cs`: Protects create, import, and delete climb actions with `[Authorize]`.
 - `api/Controllers/LogEntriesController.cs`: Protects log entry creation with `[Authorize]`.
 - `api/Controllers/PlacesController.cs`: Protects place creation and import actions with `[Authorize]`.
@@ -272,13 +275,17 @@ The current authorization model answers this question:
 
 That is enough to protect actions from anonymous users.
 
-It does not yet fully answer:
+It now also records ownership. The backend stores a local `AppUser` row for each Auth0 identity, keyed by the `sub` claim in a unique `Auth0Subject` column. That row is created just-in-time on the user's first authenticated request, so signing in is enough to provision it.
 
-> Does this signed-in person own this exact record?
+New log entries are stamped with the authenticated user server-side. The create endpoint ignores any user identifier sent by the client, because `CreateLogEntryDto` has no such field at all. Log entries can be read back for one user with `GET /api/logentries?userId=`.
 
-To support per-user ownership, the backend would need to store the Auth0 user identifier on records such as log entries, then check that identifier before returning, editing, or deleting user-specific data.
+What is still missing:
 
-In other words, the current system protects write actions behind login, but future work may be needed for user-specific private data and role-based permissions.
+> Does this signed-in person have permission to edit or delete this exact record?
+
+Ownership is recorded, but it is not yet enforced on edits and deletes. There are no update or delete endpoints for log entries yet, and `DELETE /api/climbs/{id}` still lets any signed-in user delete a climb, which cascades to other users' log entries.
+
+Role-based permissions and private, user-only data are also still future work.
 
 ## Scalability and Future Environments
 
