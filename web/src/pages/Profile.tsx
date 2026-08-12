@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { CalendarDays, MapPin, Pencil } from "lucide-react";
@@ -5,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import UserAvatar from "@/components/user/UserAvatar";
+import FollowButton from "@/components/user/FollowButton";
+import ErrorToast from "@/components/log/ErrorToast";
 import LogEntryTable from "@/components/log/LogEntryTable";
 import { useCurrentUser, useUserLogEntries, useUserProfile } from "@/hooks/user-hooks";
 import type { UserStats } from "@/types/user";
@@ -127,8 +130,9 @@ function StatsRow({ stats }: { stats: UserStats }) {
 export default function Profile() {
   const { username } = useParams();
   const { user: auth0User } = useAuth0();
-  const { profile, loading, error, notFound } = useUserProfile(username);
+  const { profile, loading, error, notFound, refetch } = useUserProfile(username);
   const { user: currentUser } = useCurrentUser();
+  const [followError, setFollowError] = useState<string | null>(null);
   const {
     entries,
     loading: entriesLoading,
@@ -139,7 +143,7 @@ export default function Profile() {
   } = useUserLogEntries(username);
 
   const isOwnProfile =
-    !!profile && !!currentUser && currentUser.id === profile.id;
+    !!profile && (profile.isMe || currentUser?.id === profile.id);
 
   if (notFound) {
     return (
@@ -176,6 +180,14 @@ export default function Profile() {
 
   return (
     <Shell>
+      {followError && (
+        <ErrorToast
+          title="Follow failed"
+          message={followError}
+          onDismiss={() => setFollowError(null)}
+        />
+      )}
+
       <div className="rounded-lg border bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
@@ -196,6 +208,24 @@ export default function Profile() {
                 </p>
               )}
               <div className="flex flex-wrap items-center gap-4 pt-2 text-sm text-slate-600">
+                <Link
+                  to={`/users/${profile.username}/followers`}
+                  className="hover:underline"
+                >
+                  <span className="font-medium text-slate-900">
+                    {profile.followerCount}
+                  </span>{" "}
+                  follower{profile.followerCount === 1 ? "" : "s"}
+                </Link>
+                <Link
+                  to={`/users/${profile.username}/following`}
+                  className="hover:underline"
+                >
+                  <span className="font-medium text-slate-900">
+                    {profile.followingCount}
+                  </span>{" "}
+                  following
+                </Link>
                 {profile.homePlace && (
                   <span className="flex items-center gap-1">
                     <MapPin className="h-4 w-4" />
@@ -210,13 +240,20 @@ export default function Profile() {
             </div>
           </div>
 
-          {isOwnProfile && (
+          {isOwnProfile ? (
             <Link to="/profile/edit">
               <Button variant="outline" className="gap-2">
                 <Pencil className="h-4 w-4" />
                 Edit profile
               </Button>
             </Link>
+          ) : (
+            <FollowButton
+              username={profile.username}
+              isFollowing={profile.isFollowedByMe}
+              onError={setFollowError}
+              onChange={() => void refetch()}
+            />
           )}
         </div>
       </div>

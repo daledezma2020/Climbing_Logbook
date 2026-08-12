@@ -11,9 +11,13 @@ internal sealed class UserServiceStub : IUserService
     public AppUser User { get; set; } = new();
     public AppUser? FoundUser { get; set; }
     public UserProfileDto Profile { get; set; } = new();
+    public List<UserSummaryDto> SearchResults { get; set; } = [];
     public ClaimsPrincipal? LastPrincipal { get; private set; }
     public string? LastRequestedUsername { get; private set; }
-    public bool LastIncludePrivate { get; private set; }
+    public AppUser? LastCaller { get; private set; }
+    public string? LastSearchQuery { get; private set; }
+    public int? LastSearchLimit { get; private set; }
+    public int? LastSearchCallerId { get; private set; }
 
     public Task<AppUser> EnsureUserAsync(ClaimsPrincipal principal, CancellationToken cancellationToken = default)
     {
@@ -27,10 +31,22 @@ internal sealed class UserServiceStub : IUserService
         return Task.FromResult(FoundUser);
     }
 
-    public Task<UserProfileDto> GetProfileAsync(AppUser user, bool includePrivate, CancellationToken cancellationToken = default)
+    public Task<UserProfileDto> GetProfileAsync(AppUser user, AppUser? caller, CancellationToken cancellationToken = default)
     {
-        LastIncludePrivate = includePrivate;
+        LastCaller = caller;
         return Task.FromResult(Profile);
+    }
+
+    public Task<List<UserSummaryDto>> SearchUsersAsync(
+        string query,
+        int limit,
+        int? callerId,
+        CancellationToken cancellationToken = default)
+    {
+        LastSearchQuery = query;
+        LastSearchLimit = limit;
+        LastSearchCallerId = callerId;
+        return Task.FromResult(SearchResults);
     }
 
     public Task<AppUser> UpdateProfileAsync(int userId, UpdateUserProfileDto dto, CancellationToken cancellationToken = default) =>

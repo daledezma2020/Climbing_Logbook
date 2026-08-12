@@ -12,6 +12,7 @@ import {
   LogOut,
   Pencil,
   UserPlus,
+  Users as UsersIcon,
 } from "lucide-react";
 
 export default function Navbar() {
@@ -88,6 +89,16 @@ export default function Navbar() {
               >
                 <Mountain className="h-4 w-4" />
                 Climbs
+              </Button>
+            </Link>
+
+            <Link to="/users">
+              <Button
+                variant={isActive("/users") ? "default" : "ghost"}
+                className="gap-2"
+              >
+                <UsersIcon className="h-4 w-4" />
+                Climbers
               </Button>
             </Link>
           </div>

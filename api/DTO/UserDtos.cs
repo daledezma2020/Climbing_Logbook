@@ -9,6 +9,10 @@ public class UserSummaryDto
     public string Username { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
     public string? PictureUrl { get; set; }
+    public PlaceSummaryDto? HomePlace { get; set; }
+    public int FollowerCount { get; set; }
+    public bool IsFollowedByMe { get; set; }
+    public bool IsMe { get; set; }
 }
 
 public class CurrentUserDto
@@ -37,6 +41,10 @@ public class UserProfileDto
     public PlaceSummaryDto? HomePlace { get; set; }
     public DateTime CreatedAt { get; set; }
     public UserStatsDto Stats { get; set; } = new();
+    public int FollowerCount { get; set; }
+    public int FollowingCount { get; set; }
+    public bool IsFollowedByMe { get; set; }
+    public bool IsMe { get; set; }
 }
 
 public class UserStatsDto

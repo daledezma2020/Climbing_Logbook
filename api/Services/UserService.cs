@@ -15,9 +15,11 @@ public partial class UserService : IUserService
     private const int MinUsernameLength = 3;
     private const int MaxUsernameBaseLength = 40;
     private const string FallbackUsernameBase = "climber";
+    private const int MaxSearchResults = 50;
     private static readonly HashSet<string> ReservedUsernames = new(StringComparer.OrdinalIgnoreCase)
     {
-        "me", "profile", "profiles", "users", "admin", "settings", "new", "edit", "login", "logout"
+        "me", "profile", "profiles", "users", "admin", "settings", "new", "edit", "login", "logout",
+        "search", "followers", "following"
     };
 
     [GeneratedRegex("^[a-z0-9]([a-z0-9_-]*[a-z0-9])?$")]
@@ -26,6 +28,7 @@ public partial class UserService : IUserService
     private readonly ApplicationDbContext _context;
     private readonly IAuth0UserInfoClient _userInfoClient;
     private readonly ICatalogService _catalogService;
+    private readonly IFollowService _followService;
     private readonly IAvatarStorage _avatarStorage;
     private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly ILogger<UserService> _logger;
@@ -34,6 +37,7 @@ public partial class UserService : IUserService
         ApplicationDbContext context,
         IAuth0UserInfoClient userInfoClient,
         ICatalogService catalogService,
+        IFollowService followService,
         IAvatarStorage avatarStorage,
         IHttpContextAccessor httpContextAccessor,
         ILogger<UserService> logger)
@@ -41,6 +45,7 @@ public partial class UserService : IUserService
         _context = context;
         _userInfoClient = userInfoClient;
         _catalogService = catalogService;
+        _followService = followService;
         _avatarStorage = avatarStorage;
         _httpContextAccessor = httpContextAccessor;
         _logger = logger;
@@ -113,22 +118,58 @@ public partial class UserService : IUserService
 
     public async Task<UserProfileDto> GetProfileAsync(
         AppUser user,
-        bool includePrivate,
+        AppUser? caller,
         CancellationToken cancellationToken = default)
     {
+        var isMe = caller is not null && caller.Id == user.Id;
+        var counts = await _followService.GetCountsAsync(user.Id, cancellationToken);
+
         return new UserProfileDto
         {
             Id = user.Id,
             Username = user.Username,
             DisplayName = user.DisplayName,
-            Email = includePrivate ? user.Email : null,
+            Email = isMe ? user.Email : null,
             Bio = user.Bio,
             PictureUrl = user.PictureUrl,
             HomePlaceId = user.HomePlaceId,
             HomePlace = user.HomePlace == null ? null : CatalogMapping.ToDto(user.HomePlace),
             CreatedAt = user.CreatedAt,
-            Stats = await _catalogService.GetUserStatsAsync(user.Id, cancellationToken)
+            Stats = await _catalogService.GetUserStatsAsync(user.Id, cancellationToken),
+            FollowerCount = counts.Followers,
+            FollowingCount = counts.Following,
+            IsMe = isMe,
+            IsFollowedByMe = caller is not null
+                && !isMe
+                && await _followService.IsFollowingAsync(caller.Id, user.Id, cancellationToken)
         };
+    }
+
+    public async Task<List<UserSummaryDto>> SearchUsersAsync(
+        string query,
+        int limit,
+        int? callerId,
+        CancellationToken cancellationToken = default)
+    {
+        query = (query ?? string.Empty).Trim();
+        if (query.Length == 0)
+        {
+            return [];
+        }
+
+        limit = Math.Clamp(limit, 1, MaxSearchResults);
+
+        var pattern = $"%{query}%";
+        var users = await _context.AppUsers
+            .Include(u => u.HomePlace)
+            .Where(u => EF.Functions.ILike(u.Username, pattern) || EF.Functions.ILike(u.DisplayName, pattern))
+            .OrderBy(u => u.Username)
+            .Take(limit)
+            .ToListAsync(cancellationToken);
+
+        var summaries = users.Select(CatalogMapping.ToSummaryDto).ToList();
+        await _followService.DecorateAsync(summaries, callerId, cancellationToken);
+        return summaries;
     }
 
     public async Task<AppUser> UpdateProfileAsync(

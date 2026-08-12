@@ -23,6 +23,9 @@ External Auth0, OpenBeta, OpenStreetMap, and Nominatim calls are never made by a
 | Catalog/dashboard UI | Statistics, search filtering, and pagination | Component |
 | Authentication UI | Authenticated/visitor navigation actions and user display | Unit + component |
 | Location search | Successful selection and recoverable search failure | Component |
+| Following | Idempotent follow/unfollow, self-follow rejection, counts, paged follower and following lists, and caller relationship flags | Unit + PostgreSQL integration |
+| User search | Partial case-insensitive username and display-name matching, limit clamping, blank queries, and debounced/stale frontend requests | Unit + integration + component |
+| Follow UI | Optimistic toggle with rollback, error surfacing, and sign-in redirect for visitors | Component |
 
 ## Deliberate exclusions
 
