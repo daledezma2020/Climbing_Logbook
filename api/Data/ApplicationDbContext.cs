@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Setter> Setters { get; set; } = null!;
     public DbSet<AppUser> AppUsers { get; set; } = null!;
     public DbSet<Follow> Follows { get; set; } = null!;
+    public DbSet<Like> Likes { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -127,6 +128,46 @@ public class ApplicationDbContext : DbContext
             .WithMany(u => u.Comments)
             .HasForeignKey(c => c.UserId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Comment>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_Comments_Target",
+                """
+                (
+                    "ClimbId" IS NOT NULL AND "LogEntryId" IS NULL
+                )
+                OR (
+                    "ClimbId" IS NULL AND "LogEntryId" IS NOT NULL
+                )
+                """));
+
+        modelBuilder.Entity<Comment>()
+            .HasOne(c => c.LogEntry)
+            .WithMany(l => l.Comments)
+            .HasForeignKey(c => c.LogEntryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Comment>()
+            .HasIndex(c => c.LogEntryId);
+
+        modelBuilder.Entity<Like>()
+            .HasOne(l => l.User)
+            .WithMany(u => u.Likes)
+            .HasForeignKey(l => l.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Like>()
+            .HasOne(l => l.LogEntry)
+            .WithMany(e => e.Likes)
+            .HasForeignKey(l => l.LogEntryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Like>()
+            .HasIndex(l => new { l.UserId, l.LogEntryId })
+            .IsUnique();
+
+        modelBuilder.Entity<Like>()
+            .HasIndex(l => l.LogEntryId);
 
         modelBuilder.Entity<LogEntry>()
             .HasOne(l => l.Climb)

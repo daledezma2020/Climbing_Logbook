@@ -16,6 +16,10 @@ public class Comment
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public int ClimbId { get; set; }
+    // Exactly one target is set, enforced by the CK_Comments_Target check constraint.
+    public int? ClimbId { get; set; }
     public Climb? Climb { get; set; }
+
+    public int? LogEntryId { get; set; }
+    public LogEntry? LogEntry { get; set; }
 }

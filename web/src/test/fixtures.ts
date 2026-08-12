@@ -1,4 +1,5 @@
 import type { Climb, LogEntry, Place } from "@/types/catalog";
+import type { Comment, HomeStats } from "@/types/social";
 import type { CurrentUser, UserSummary } from "@/types/user";
 
 export const testUser: UserSummary = {
@@ -81,6 +82,52 @@ export function logEntry(overrides: Partial<LogEntry> = {}): LogEntry {
     notes: null,
     createdAt: "2026-07-01T12:00:00.000Z",
     updatedAt: null,
+    likeCount: 0,
+    commentCount: 0,
+    isLikedByMe: false,
+    ...overrides,
+  };
+}
+
+export function comment(overrides: Partial<Comment> = {}): Comment {
+  return {
+    id: 1,
+    content: "Nice send!",
+    user: testUser,
+    createdAt: "2026-07-02T12:00:00.000Z",
+    climbId: null,
+    logEntryId: 1,
+    canDelete: false,
+    ...overrides,
+  };
+}
+
+export function homeStats(overrides: Partial<HomeStats> = {}): HomeStats {
+  return {
+    core: {
+      totalSends: 12,
+      totalAttempts: 15,
+      distinctClimbs: 9,
+      sendRate: 0.8,
+      hardestGrades: [
+        { system: "VScale", grade: "V6", climbId: 1, climbName: "Blue Arete" },
+      ],
+    },
+    activity: {
+      sendsThisMonth: 4,
+      daysClimbedLast30: 6,
+      currentStreakWeeks: 2,
+      lastClimbedAt: "2026-07-01T12:00:00.000Z",
+    },
+    places: {
+      topPlaces: [{ place: testPlace, count: 5 }],
+      byDiscipline: { Bouldering: 12 },
+    },
+    social: {
+      followerCount: 7,
+      followingCount: 4,
+      followingActiveThisWeek: 2,
+    },
     ...overrides,
   };
 }

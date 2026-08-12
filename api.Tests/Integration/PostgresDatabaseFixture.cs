@@ -45,13 +45,71 @@ public sealed class PostgresDatabaseFixture : IAsyncLifetime
         IOpenBetaClient? openBeta = null,
         IOsmClient? osm = null)
     {
-        var context = CreateContext();
+        return CreateCatalogService(CreateContext(), openBeta, osm);
+    }
+
+    private static CatalogService CreateCatalogService(
+        ApplicationDbContext context,
+        IOpenBetaClient? openBeta = null,
+        IOsmClient? osm = null)
+    {
         return new CatalogService(
             context,
             openBeta ?? new StubOpenBetaClient(),
             osm ?? new StubOsmClient(),
             new SetterService(context),
+            new FollowService(context),
             NullLogger<CatalogService>.Instance);
+    }
+
+    public SocialService CreateSocialService()
+    {
+        var context = CreateContext();
+        return new SocialService(
+            context,
+            CreateCatalogService(context),
+            new FollowService(context));
+    }
+
+    public async Task<int> CreateClimbAsync(
+        string name = "Test Climb",
+        GradeSystem gradeSystem = GradeSystem.VScale,
+        string grade = "V4",
+        int? placeId = null)
+    {
+        await using var context = CreateContext();
+        var climb = new Climb
+        {
+            Name = name,
+            GradeSystem = gradeSystem,
+            Grade = grade,
+            CustomLocationName = placeId.HasValue ? null : "Test Crag",
+            CustomLocationLatitude = placeId.HasValue ? null : 40.0,
+            CustomLocationLongitude = placeId.HasValue ? null : -105.0,
+            PlaceId = placeId
+        };
+        context.Climbs.Add(climb);
+        await context.SaveChangesAsync();
+        return climb.Id;
+    }
+
+    public async Task<int> CreateLogEntryAsync(
+        int userId,
+        int climbId,
+        DateTime? occurredAt = null,
+        LogEntryStatus status = LogEntryStatus.Completed)
+    {
+        await using var context = CreateContext();
+        var entry = new LogEntry
+        {
+            UserId = userId,
+            ClimbId = climbId,
+            OccurredAt = occurredAt ?? DateTime.UtcNow,
+            Status = status
+        };
+        context.LogEntries.Add(entry);
+        await context.SaveChangesAsync();
+        return entry.Id;
     }
 
     public async Task<int> CreateUserAsync(string username = "testclimber")
@@ -82,12 +140,7 @@ public sealed class PostgresDatabaseFixture : IAsyncLifetime
         }
 
         var context = CreateContext();
-        var catalogService = new CatalogService(
-            context,
-            new StubOpenBetaClient(),
-            new StubOsmClient(),
-            new SetterService(context),
-            NullLogger<CatalogService>.Instance);
+        var catalogService = CreateCatalogService(context);
 
         return new UserService(
             context,

@@ -64,6 +64,9 @@ export interface LogEntry {
   notes: string | null;
   createdAt: string;
   updatedAt: string | null;
+  likeCount: number;
+  commentCount: number;
+  isLikedByMe: boolean;
 }
 
 export interface CreateLogEntryInput {

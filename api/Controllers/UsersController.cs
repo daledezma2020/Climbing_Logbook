@@ -9,22 +9,23 @@ namespace api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UsersController : ControllerBase
+public class UsersController : ApiControllerBase
 {
-    private const int DefaultPageSize = 25;
-
     private readonly IUserService _userService;
     private readonly ICatalogService _catalogService;
     private readonly IFollowService _followService;
+    private readonly ISocialService _socialService;
 
     public UsersController(
         IUserService userService,
         ICatalogService catalogService,
-        IFollowService followService)
+        IFollowService followService,
+        ISocialService socialService)
     {
         _userService = userService;
         _catalogService = catalogService;
         _followService = followService;
+        _socialService = socialService;
     }
 
     // The literal "me" routes are declared first, and "me" is a reserved username,
@@ -100,13 +101,21 @@ public class UsersController : ControllerBase
         }
     }
 
+    [Authorize]
+    [HttpGet("me/stats")]
+    public async Task<ActionResult<HomeStatsDto>> GetMyStats(CancellationToken cancellationToken)
+    {
+        var user = await _userService.EnsureUserAsync(User, cancellationToken);
+        return Ok(await _catalogService.GetHomeStatsAsync(user.Id, cancellationToken));
+    }
+
     [HttpGet("search")]
     public async Task<ActionResult<IEnumerable<UserSummaryDto>>> SearchUsers(
         [FromQuery] string q = "",
         [FromQuery] int limit = 10,
         CancellationToken cancellationToken = default)
     {
-        var caller = await TryGetCallerAsync(cancellationToken);
+        var caller = await TryGetCallerAsync(_userService, cancellationToken);
         return Ok(await _userService.SearchUsersAsync(q, limit, caller?.Id, cancellationToken));
     }
 
@@ -119,7 +128,7 @@ public class UsersController : ControllerBase
             return NotFound();
         }
 
-        var caller = await TryGetCallerAsync(cancellationToken);
+        var caller = await TryGetCallerAsync(_userService, cancellationToken);
         return Ok(await _userService.GetProfileAsync(user, caller, cancellationToken));
     }
 
@@ -200,8 +209,11 @@ public class UsersController : ControllerBase
             return NotFound();
         }
 
-        return Ok(await _catalogService.GetLogEntriesPagedAsync(
-            user.Id, skip, take ?? DefaultPageSize, cancellationToken));
+        var caller = await TryGetCallerAsync(_userService, cancellationToken);
+        var page = await _catalogService.GetLogEntriesPagedAsync(
+            user.Id, skip, take ?? DefaultPageSize, cancellationToken);
+        await _socialService.DecorateLogEntriesAsync(page.Items, caller?.Id, cancellationToken);
+        return Ok(page);
     }
 
     private delegate Task<PagedResult<UserSummaryDto>> ConnectionPageQuery(
@@ -224,16 +236,7 @@ public class UsersController : ControllerBase
             return NotFound();
         }
 
-        var caller = await TryGetCallerAsync(cancellationToken);
+        var caller = await TryGetCallerAsync(_userService, cancellationToken);
         return Ok(await query(user.Id, caller?.Id, skip, take ?? DefaultPageSize, cancellationToken));
-    }
-
-    // These endpoints serve visitors and signed-in users alike. EnsureUserAsync throws
-    // without a subject claim, so it is only reached once the request is authenticated.
-    private async Task<AppUser?> TryGetCallerAsync(CancellationToken cancellationToken)
-    {
-        return User.Identity?.IsAuthenticated == true
-            ? await _userService.EnsureUserAsync(User, cancellationToken)
-            : null;
     }
 }

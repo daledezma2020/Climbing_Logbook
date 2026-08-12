@@ -16,7 +16,11 @@ public interface ICatalogService
     Task<List<BoardConfigurationDto>> GetBoardConfigurationsAsync();
     Task<List<LogEntryDto>> GetLogEntriesAsync(int? userId = null);
     Task<PagedResult<LogEntryDto>> GetLogEntriesPagedAsync(int? userId, int skip, int take, CancellationToken cancellationToken = default);
+    Task<LogEntryDto?> GetLogEntryAsync(int id, CancellationToken cancellationToken = default);
+    Task<PagedResult<LogEntryDto>> GetLogEntriesForUsersPagedAsync(IReadOnlyCollection<int> userIds, int skip, int take, CancellationToken cancellationToken = default);
+    Task<PagedResult<LogEntryDto>> GetClimbLogEntriesPagedAsync(int climbId, int skip, int take, CancellationToken cancellationToken = default);
     Task<UserStatsDto> GetUserStatsAsync(int userId, CancellationToken cancellationToken = default);
+    Task<HomeStatsDto> GetHomeStatsAsync(int userId, CancellationToken cancellationToken = default);
     Task<LogEntryDto> CreateLogEntryAsync(CreateLogEntryDto dto, int userId);
     Task<SearchResponseDto> SearchAsync(string query, int limit);
 }

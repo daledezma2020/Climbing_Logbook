@@ -2,7 +2,6 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import Home from "@/pages/Home";
 import Climbs from "@/pages/Climbs";
 import Logbook from "@/pages/Logbook";
 import { climb, logEntry } from "@/test/fixtures";
@@ -27,21 +26,6 @@ describe("catalog pages", () => {
     catalog.climbs = [];
     catalog.logLoading = false;
     catalog.logError = null;
-  });
-
-  it("summarizes completed climbs, hardest grade, and this month's activity", () => {
-    const thisMonth = new Date().toISOString();
-    catalog.entries = [
-      logEntry({ id: 1, occurredAt: thisMonth, climb: climb({ grade: "V3" }) }),
-      logEntry({ id: 2, occurredAt: thisMonth, climb: climb({ grade: "V7" }) }),
-      logEntry({ id: 3, occurredAt: thisMonth, status: "Attempted", climb: climb({ grade: "V10" }) }),
-    ];
-
-    render(<Home />);
-
-    expect(within(screen.getByText("All time Climbs").closest('[data-slot="card"]')!).getByText("2")).toBeInTheDocument();
-    expect(within(screen.getByText("Hardest Grade").closest('[data-slot="card"]')!).getByText("V7")).toBeInTheDocument();
-    expect(within(screen.getByText("Climbs This Month").closest('[data-slot="card"]')!).getByText("3")).toBeInTheDocument();
   });
 
   it("filters the climb catalog using the global search", async () => {

@@ -3,6 +3,7 @@ import Layout from '@/components/layout/Layout';
 import Home from '@/pages/Home';
 import Logbook from '@/pages/Logbook';
 import Climbs from '@/pages/Climbs';
+import ClimbDetail from '@/pages/ClimbDetail';
 import LogClimb from '@/pages/LogClimb';
 import Profile from '@/pages/Profile';
 import EditProfile from '@/pages/EditProfile';
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
       {
         path: 'climbs',
         element: <Climbs />,
+      },
+      {
+        path: 'climbs/:id',
+        element: <ClimbDetail />,
       },
       {
         path: 'log/new',

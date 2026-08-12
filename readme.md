@@ -125,4 +125,39 @@ that interface assumes a filesystem.
   is resolved from the token; a client-supplied id is ignored. Returns 409 when the username is
   already taken.
 - `POST /api/users/me/avatar` - avatar upload, described above.
+- `GET /api/users/me/stats` - the home page KPI payload. Requires a bearer token.
 - `GET /api/users/{username}/logentries?skip=0&take=25` - that user's log entries, paged.
+- `POST` / `DELETE /api/users/{username}/follow` - follow or unfollow a climber. Both are
+  idempotent, and following yourself returns 400.
+- `GET /api/users/{username}/followers` and `.../following?skip=0&take=25` - paged connections.
+
+## Feed, likes, and comments
+
+The home page shows a feed of log entries from the climbers you follow, plus your own, newest
+first.
+
+- `GET /api/feed?skip=0&take=25` - the caller's feed. Requires a bearer token.
+- `GET /api/logentries/{id}` - a single log entry.
+- `POST` / `DELETE /api/logentries/{id}/like` - like or unlike a logged climb. Idempotent in both
+  directions; a second like is a no-op rather than an error.
+- `GET` / `POST /api/logentries/{id}/comments` - the thread on one logged climb.
+- `GET` / `POST /api/climbs/{id}/comments` - the thread on the climb itself, shown on `/climbs/:id`.
+- `GET /api/climbs/{id}/logentries?skip=0&take=25` - every ascent logged against a climb.
+- `DELETE /api/comments/{id}` - delete your own comment. Returns 403 for anyone else's.
+
+A comment targets exactly one of a climb or a log entry, enforced in the database by the
+`CK_Comments_Target` check constraint, so one table backs both threads. Likes attach to log
+entries only and are unique per `(user, log entry)`.
+
+Reads are public; every write requires a bearer token. The author of a comment or like is always
+resolved from the token and never accepted from the client.
+
+### Home page KPIs
+
+`GET /api/users/me/stats` returns four groups: core send stats, recent activity, places and
+disciplines, and social. The home page renders only the cards the user has enabled, defaulting to
+the core group; that choice lives in the browser's `localStorage`, not on the server.
+
+Hardest-grade comparisons go through the per-system ladders in `api/Services/GradeOrdering.cs`.
+Comparing grades numerically is wrong: it ranks `5.9` above `5.14a` and cannot compare V-scale to
+Font at all.

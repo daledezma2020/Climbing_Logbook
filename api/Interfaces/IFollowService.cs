@@ -19,6 +19,8 @@ public interface IFollowService
         IReadOnlyCollection<int> candidateIds,
         CancellationToken cancellationToken = default);
 
+    Task<List<int>> GetFollowingIdsAsync(int followerId, CancellationToken cancellationToken = default);
+
     Task<PagedResult<UserSummaryDto>> GetFollowersAsync(
         int userId,
         int? callerId,

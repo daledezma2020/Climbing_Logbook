@@ -46,11 +46,13 @@ Every application update must include an explicit test-impact check. When observ
 ## Architecture
 
 ### Domain model
-The core entities are `Climb`, `Place`, `BoardConfiguration`, `Setter`, `LogEntry`, `Comment`, and the two external-reference join tables `ClimbExternalReference` / `PlaceExternalReference`. Enums live in `api/Models/Enums.cs` (`ClimbDiscipline`, `GradeSystem`, `PlaceKind`, `LogEntryStatus`, `ExternalProvider`).
+The core entities are `Climb`, `Place`, `BoardConfiguration`, `Setter`, `LogEntry`, `Comment`, `Like`, `Follow`, and the two external-reference join tables `ClimbExternalReference` / `PlaceExternalReference`. Enums live in `api/Models/Enums.cs` (`ClimbDiscipline`, `GradeSystem`, `PlaceKind`, `LogEntryStatus`, `ExternalProvider`).
 
 Key rules configured in `ApplicationDbContext.OnModelCreating`:
 - **A `Climb` belongs to exactly one context** — a `Place` (outdoor/gym), OR a `BoardConfiguration` (e.g. Moonboard), OR a custom location (`CustomLocationName` + lat/long). This is enforced by the `CK_Climbs_Context` check constraint, and re-validated in code by `ValidateClimbContext`. All three FK sets are nullable and mutually exclusive.
 - Climb→Comments and Climb→LogEntries cascade on delete; Climb→Place/BoardConfiguration/Setter and Place→ParentPlace use `Restrict`.
+- **A `Comment` targets exactly one of a `Climb` or a `LogEntry`.** Both FKs are nullable and mutually exclusive, enforced by the `CK_Comments_Target` check constraint. This is what lets one table back both the climb-page thread and the feed-card thread.
+- **`Like` attaches to a `LogEntry` only**, with a unique `(UserId, LogEntryId)` index. `SocialService.LikeAsync` is idempotent: it pre-checks, then swallows a unique violation, exactly as `FollowService.FollowAsync` does. LogEntry→Comments and LogEntry→Likes cascade on delete.
 - `ExternalProvider` + `ExternalId` is a unique index on both external-reference tables — this is how imported records are deduplicated.
 - Migrations auto-apply at startup via `db.Database.Migrate()`. JSON is camelCase with enums serialized as strings (`JsonStringEnumConverter`).
 
@@ -63,8 +65,13 @@ Controllers are thin and delegate to services registered in `Program.cs`. Routes
 - **`SetterService`** (`ISetterService`) resolves/creates setters by name; `CatalogService` uses it when a manual climb supplies a `SetterName` instead of an id. `ResolveBoardConfigurationAsync` does the same find-or-create by name for boards.
 - **Seeding**: `SeedingController` / `SeedingService` load `api/seeding/*.json` (benchmarks, locations, setters — Moonboard data) via POST endpoints under `api/seeding`.
 - When adding a field to a climb, update the model, `CreateManualClimbDto`, the entity-building block in `CreateManualClimbAsync`, and `CatalogMapping` — mapping is explicit in both directions, so a missed spot silently won't round-trip.
+- **`SocialService` (`ISocialService`) owns the feed, likes, and comments.** It backs `FeedController`, `CommentsController`, and the social routes on `LogEntries` / `Climbs`. Comment DTOs live in `api/DTO/SocialDtos.cs`; the home-stats DTOs sit in `api/DTO/UserDtos.cs` next to `UserStatsDto`, since both are served from `api/users`.
+  - `GetFeedAsync` composes `IFollowService.GetFollowingIdsAsync` (the caller's followees plus the caller) with `CatalogService.GetLogEntriesForUsersPagedAsync`.
+  - **`DecorateLogEntriesAsync` is the only place `LogEntryDto.LikeCount` / `CommentCount` / `IsLikedByMe` get populated** - `CatalogMapping` leaves them at their defaults. Any endpoint returning log entries must call it, or the UI silently shows zeros. It also forwards the entries' authors to `FollowService.DecorateAsync`.
+- **Home KPIs**: `CatalogService.GetHomeStatsAsync` returns `HomeStatsDto` with four groups (`Core`, `Activity`, `Places`, `Social`) from `GET api/users/me/stats`. Grade comparison must go through `GradeOrdering.Rank`, which knows each system's ladder - a numeric sort ranks `5.9` above `5.14a`.
+- **Optional auth**: controllers needing "works signed in or out" derive from `ApiControllerBase` and call `TryGetCallerAsync(_userService, ct)`. `EnsureUserAsync` throws without a subject claim, so it is only reached once authenticated.
 
-- **Controllers** (`Controllers/`) are thin: validate `ModelState`, map DTO ↔ model, delegate to the service, and wrap everything in try/catch that logs and returns 500. Routes follow `api/[controller]`.
+- **Controllers** (`Controllers/`) are thin: validate `ModelState`, map DTO ↔ model, and delegate to the service. Routes follow `api/[controller]`. Most controllers let exceptions bubble to the framework; only `SettersController` wraps its actions in try/catch returning 500. Do not add try/catch to new actions just to match that outlier.
 - **Services** (`Services/`) contain all data access; controllers never touch `ApplicationDbContext` directly.
 - **DTOs** (`DTO/`) are used for inbound POST/PUT bodies (e.g. `ClimbRouteDto`); controllers manually map DTO fields onto entity models. When adding a field to an entity, update the model, the DTO, **and** both the create and update mapping blocks in the controller — `UpdateClimbRouteAsync` copies fields explicitly, so a missing field there silently won't persist.
 - **Models** (`Models/`) use DataAnnotations for validation. Relationships are configured in `ApplicationDbContext.OnModelCreating`: ClimbRoute→Comments cascades on delete; ClimbRoute→Location and ClimbRoute→Setter use `Restrict` and have nullable FKs.
@@ -74,10 +81,12 @@ Controllers are thin and delegate to services registered in `Program.cs`. Routes
 - **Seeding**: `SeedingController` / `SeedingService` load `seeding/*.json` (benchmarks, locations, setters — Moonboard data) via POST endpoints under `api/seeding`.
 
 ### Frontend — pages + custom data hooks
-- **Routing** (`src/App.tsx`): `createBrowserRouter` with a shared `Layout`. Pages: `Home`, `Logbook`, `Climbs`, `LogClimb` (route `log/new`).
+- **Routing** (`src/App.tsx`): `createBrowserRouter` with a shared `Layout`. Pages: `Home`, `Logbook`, `Climbs`, `ClimbDetail` (route `climbs/:id`), `LogClimb` (route `log/new`), `Users`, `Profile` (`users/:username`), `UserConnections`, `EditProfile`.
+- **Home** is auth-aware: signed-out visitors get a hero and sign-in CTA; signed-in users get a customizable KPI row plus the following feed. KPIs are declared once in `src/components/home/kpi-catalog.tsx` (`{ id, group, title, render(stats) }`) - adding one means adding a single entry. Which cards show is chosen in `KpiCustomizer` and persisted to `localStorage` under `climbing-logbook:home-kpis:{userId}` by `useKpiPreferences`, defaulting to the `core` group. There is no server-side preference store.
 - **Data layer**: `src/lib/api.ts` exports `apiFetch<T>` (prepends `${VITE_API_BASE_URL}/api`, sets JSON headers, attaches optional bearer token, and normalizes error bodies into thrown `Error`s). Domain hooks in `src/hooks/catalog-hooks.ts` (`useClimbs`, `useLogEntries`, `usePlaces`, `useBoardConfigurations`, `useSearch`) own loading/error state and refetch after mutations. Mutation helpers (`createManualClimb`, `createLogEntry`, `importOpenBetaClimb`) are plain functions taking an `accessToken`. `useSearch` guards against out-of-order responses with a `requestId` ref. No React Query.
 - **Types** in `src/types/` (`catalog.ts`, `setter.ts`) mirror the API DTOs.
-- **UI**: shadcn/ui-style components in `src/components/ui/` (Radix + Tailwind v4 + class-variance-authority), configured via `components.json`. Forms use react-hook-form + zod. Feature components live in `src/components/log/` (`ManualClimbForm`, `LogEntryForm`, `LocationPicker`, `ResultBadges`, `ErrorToast`) and `src/components/layout/`.
+- **UI**: shadcn/ui-style components in `src/components/ui/` (Radix + Tailwind v4 + class-variance-authority), configured via `components.json`. Forms use react-hook-form + zod. Feature components live in `src/components/log/` (`ManualClimbForm`, `LogEntryForm`, `LocationPicker`, `ResultBadges`, `ErrorToast`), `src/components/feed/` (`FeedCard`, `LikeButton`, `CommentThread`), `src/components/user/`, `src/components/home/`, `src/components/stats/`, and `src/components/layout/`.
+- **Social hooks** live in `src/hooks/social-hooks.ts` (`useFeed`, `useHomeStats`, `useLikeToggle`, `useComments`). `useComments` takes a `{ kind: "logEntry" | "climb", id }` target and routes to the matching endpoint. `LikeButton` and `FollowButton` share the same shape: optimistic toggle, rollback on failure, redirect to login when signed out.
 - The `@` alias resolves to `src/` (set in `vite.config.ts` and tsconfig).
 
 ## Conventions
