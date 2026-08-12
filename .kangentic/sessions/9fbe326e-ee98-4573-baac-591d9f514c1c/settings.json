@@ -1,0 +1,227 @@
+{
+  "enabledMcpjsonServers": [
+    "kangentic"
+  ],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" tool_start extractTool:eyJmaWVsZCI6InRvb2xfbmFtZSJ9 extractToolId:eyJmaWVsZHMiOlsidG9vbF91c2VfaWQiXX0= extractToolId:eyJmaWVsZHMiOlsidG9vbF91c2VfaWQiXSwibmVzdGVkIjoidG9vbF9pbnB1dCJ9 extractDetail:eyJmaWVsZHMiOlsic2hlbGxfaWQiLCJmaWxlX3BhdGgiLCJjb21tYW5kIiwicXVlcnkiLCJwYXR0ZXJuIiwidXJsIiwiZGVzY3JpcHRpb24iXSwibmVzdGVkIjoidG9vbF9pbnB1dCJ9 setTypeWhen:eyJ3aGVuVG9vbCI6IkJhc2giLCJuZXN0ZWQiOlsidG9vbF9pbnB1dCIsInJ1bl9pbl9iYWNrZ3JvdW5kIl0sImVxdWFscyI6InRydWUiLCJ0byI6ImJhY2tncm91bmRfc2hlbGxfc3RhcnQifQ== setTypeWhen:eyJmaWVsZCI6InRvb2xfbmFtZSIsImVxdWFscyI6IktpbGxCYXNoIiwidG8iOiJiYWNrZ3JvdW5kX3NoZWxsX2VuZCJ9"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" tool_end extractTool:eyJmaWVsZCI6InRvb2xfbmFtZSJ9 extractToolId:eyJmaWVsZHMiOlsidG9vbF91c2VfaWQiXX0= extractToolId:eyJmaWVsZHMiOlsidG9vbF91c2VfaWQiXSwibmVzdGVkIjoidG9vbF9yZXNwb25zZSJ9 extractDetail:eyJmaWVsZHMiOlsic2hlbGxJZCIsInNoZWxsX2lkIiwiYmFja2dyb3VuZFRhc2tJZCIsImJhc2hfaWQiXSwibmVzdGVkIjoidG9vbF9yZXNwb25zZSJ9 extractDetailWhenTool:eyJmaWVsZHMiOlsidGFza0lkIl0sIm5lc3RlZCI6InRvb2xfcmVzcG9uc2UiLCJ3aGVuVG9vbCI6Ik1vbml0b3IifQ== setTypeWhenDetailMatches:eyJwYXR0ZXJuIjoiXltcXHctXXsxLDY0fSQiLCJ0byI6ImJhY2tncm91bmRfc2hlbGxfc3RhcnQifQ=="
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" tool_end extractTool:eyJmaWVsZCI6InRvb2xfbmFtZSJ9 extractToolId:eyJmaWVsZHMiOlsidG9vbF91c2VfaWQiXX0= extractToolId:eyJmaWVsZHMiOlsidG9vbF91c2VfaWQiXSwibmVzdGVkIjoidG9vbF9pbnB1dCJ9 setTypeWhen:eyJmaWVsZCI6ImlzX2ludGVycnVwdCIsImVxdWFscyI6InRydWUiLCJ0byI6ImludGVycnVwdGVkIn0= extractDetail:eyJmaWVsZHMiOlsiZXJyb3IiXX0="
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" prompt"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" idle"
+          }
+        ]
+      }
+    ],
+    "StopFailure": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" turn_failed extractDetail:eyJmaWVsZHMiOlsiZXJyb3IiLCJlcnJvcl9kZXRhaWxzIl19 setTypeWhenDetailContains:eyJjb250YWlucyI6Im92ZXJsb2FkZWQiLCJ0byI6InR1cm5fcmV0cnlpbmcifQ== setTypeWhenDetailContains:eyJjb250YWlucyI6InNlcnZlcl9lcnJvciIsInRvIjoidHVybl9yZXRyeWluZyJ9 setTypeWhenDetailContains:eyJjb250YWlucyI6InJhdGVfbGltaXQiLCJ0byI6InR1cm5fcmV0cnlpbmcifQ== setTypeWhenDetailContains:eyJjb250YWlucyI6ImFwaV9lcnJvciIsInRvIjoidHVybl9yZXRyeWluZyJ9"
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" idle setDetail:eyJ2YWx1ZSI6InBlcm1pc3Npb24ifQ=="
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" session_start"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" session_end"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" subagent_start extractDetail:eyJmaWVsZHMiOlsiYWdlbnRfdHlwZSIsInN1YmFnZW50X3R5cGUiXX0="
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" subagent_stop extractDetail:eyJmaWVsZHMiOlsiYWdlbnRfdHlwZSIsInN1YmFnZW50X3R5cGUiXX0="
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" notification extractDetail:eyJmaWVsZHMiOlsibWVzc2FnZSIsIm5vdGlmaWNhdGlvbiJdfQ== setTypeWhenDetailContains:eyJjb250YWlucyI6IndhaXRpbmcgZm9yIHlvdXIgaW5wdXQiLCJ0byI6ImlkbGVfaGludCJ9"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" compact"
+          }
+        ]
+      }
+    ],
+    "TeammateIdle": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" teammate_idle extractDetail:eyJmaWVsZHMiOlsiYWdlbnQiLCJ0ZWFtbWF0ZSIsIm5hbWUiXX0="
+          }
+        ]
+      }
+    ],
+    "TaskCompleted": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" task_completed extractDetail:eyJmaWVsZHMiOlsidGFzayIsImRlc2NyaXB0aW9uIiwibmFtZSJdfQ=="
+          }
+        ]
+      }
+    ],
+    "ConfigChange": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" config_change"
+          }
+        ]
+      }
+    ],
+    "WorktreeCreate": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" worktree_create extractDetail:eyJmaWVsZHMiOlsibmFtZSIsInBhdGgiXX0="
+          }
+        ]
+      }
+    ],
+    "WorktreeRemove": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/event-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/events.jsonl\" worktree_remove extractDetail:eyJmaWVsZHMiOlsibmFtZSIsInBhdGgiXX0="
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(python scripts/init_skill.py:*)",
+      "Bash(psql:*)",
+      "Bash(echo:*)",
+      "mcp__figma__generate_figma_design",
+      "Bash(npm run *)",
+      "mcp__kangentic"
+    ],
+    "deny": []
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node \"C:/Users/DanL/AppData/Local/Programs/kangentic/resources/app.asar.unpacked/.vite/build/status-bridge.js\" \"C:/Users/DanL/Documents/Coding/Professional Development/Climbing_Logbook/.kangentic/sessions/9fbe326e-ee98-4573-baac-591d9f514c1c/status.json\"",
+    "refreshInterval": 10
+  },
+  "autoMode": {
+    "allow": [
+      "$defaults",
+      "Kangentic's own board and session tools (mcp__kangentic__*) are always allowed: they only read or mutate this local Kanban board's own state (tasks, columns, sessions) inside a project the user has already opened in Kangentic, never external systems or files outside the project."
+    ]
+  }
+}
