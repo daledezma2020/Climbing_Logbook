@@ -200,6 +200,31 @@ The committed `api/appsettings.json` file only contains placeholders:
 
 Do not commit real Auth0 production values, connection strings, credentials, tokens, or secrets.
 
+### Local Setup for Kangentic Worktrees
+
+Kangentic creates each task in a fresh `git worktree` checkout. A worktree only contains files that git tracks, so gitignored files like `web/.env.local` are not carried over. Without extra setup, a new worktree starts with no frontend Auth0 configuration and the app shows the "Auth0 configuration required" screen.
+
+Kangentic can seed those files for you. In the main repo's `.kangentic/config.json`, list `web/.env.local` under `git.copyFiles`:
+
+```json
+"git": {
+  "copyFiles": ["web/.env.local"]
+}
+```
+
+The same setting is available in the Kangentic UI under Settings -> Git -> Copy Files, which takes a comma-separated list. Kangentic copies each entry into the new worktree at the same relative path, right after the worktree is created.
+
+A few things to know about how `copyFiles` behaves:
+
+- Entries are repo-relative paths to individual files. Globs and directories are not supported, so each file has to be listed on its own.
+- Missing parent directories in the worktree are created automatically.
+- If a source file does not exist, it is skipped silently. A typo in the path produces no error, just a worktree that is still missing the file.
+- Entries starting with `.claude/` are ignored, so that directory cannot be seeded this way.
+
+The backend needs nothing extra. .NET user secrets are keyed by the `UserSecretsId` in `api/api.csproj` and stored machine-globally, so every worktree checks out the same csproj and resolves the same secrets file.
+
+Note that `.kangentic/config.json` is gitignored. This is a per-machine setting, so anyone cloning the repo has to set it up for themselves.
+
 ### Matching Frontend and Backend Values
 
 The frontend audience and backend audience need to match. That is how Auth0 and the API agree that a token was meant for this backend.

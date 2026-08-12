@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "kangentic": {
+      "type": "http",
+      "url": "http://127.0.0.1:55891/mcp/667bd9be-4366-478c-9a81-1755d5752614/37c742da-869c-4e7b-9d57-5ace628d5f4c",
+      "headers": {
+        "X-Kangentic-Token": "0b9eaa5135da5587a897c8d3bffbdebb7038732ca453e548c44c0da3d8352c25"
+      }
+    }
+  }
+}

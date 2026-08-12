@@ -1,0 +1,4 @@
+{"ts":1786390214398,"type":"session_start","hookContext":"{\"session_id\":\"1ecd1dbc-5f81-482b-a20d-320e083b8df0\",\"transcript_path\":\"C:\\\\Users\\\\DanL\\\\.claude\\\\projects\\\\C--Users-DanL-Documents-Coding-Professional-Development-Climbing-Logbook--kangentic-worktrees-3\\\\1ecd1dbc-5f81-482b-a20d-320e083b8df0.jsonl\",\"cwd\":\"C:\\\\Users\\\\DanL\\\\Documents\\\\Coding\\\\Professional Development\\\\Climbing_Logbook\\\\.kangentic\\\\worktrees\\\\3\",\"hook_event_name\":\"SessionStart\",\"source\":\"resume\"}"}
+{"ts":1786390215648,"type":"prompt"}
+{"ts":1786390215954,"type":"turn_failed","detail":"authentication_failed"}
+{"ts":1786390218482,"type":"session_end"}
