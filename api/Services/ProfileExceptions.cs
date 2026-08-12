@@ -17,3 +17,10 @@ public class ProfileValidationException : Exception
     {
     }
 }
+
+public class SelfFollowException : Exception
+{
+    public SelfFollowException() : base("You cannot follow yourself.")
+    {
+    }
+}

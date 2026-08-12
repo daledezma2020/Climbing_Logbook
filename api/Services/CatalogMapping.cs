@@ -63,7 +63,8 @@ public static class CatalogMapping
         Id = user.Id,
         Username = user.Username,
         DisplayName = user.DisplayName,
-        PictureUrl = user.PictureUrl
+        PictureUrl = user.PictureUrl,
+        HomePlace = user.HomePlace == null ? null : ToDto(user.HomePlace)
     };
 
     public static CurrentUserDto ToCurrentUserDto(AppUser user) => new()

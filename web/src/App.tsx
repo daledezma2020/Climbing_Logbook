@@ -6,6 +6,8 @@ import Climbs from '@/pages/Climbs';
 import LogClimb from '@/pages/LogClimb';
 import Profile from '@/pages/Profile';
 import EditProfile from '@/pages/EditProfile';
+import Users from '@/pages/Users';
+import UserConnections from '@/pages/UserConnections';
 
 const router = createBrowserRouter([
   {
@@ -29,8 +31,20 @@ const router = createBrowserRouter([
         element: <LogClimb />,
       },
       {
+        path: 'users',
+        element: <Users />,
+      },
+      {
         path: 'users/:username',
         element: <Profile />,
+      },
+      {
+        path: 'users/:username/followers',
+        element: <UserConnections kind="followers" />,
+      },
+      {
+        path: 'users/:username/following',
+        element: <UserConnections kind="following" />,
       },
       {
         path: 'profile/edit',

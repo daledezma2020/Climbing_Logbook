@@ -4,8 +4,10 @@ using api.DTO;
 using api.Interfaces;
 using api.Models;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Security.Claims;
 
 namespace api.Tests.Unit;
 
@@ -117,6 +119,106 @@ public class ControllerResultTests
         service.DeleteResult = true;
         Assert.IsType<OkObjectResult>((await controller.GetSetter(2)).Result);
         Assert.IsType<NoContentResult>(await controller.DeleteSetter(2));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FollowingYourselfIsRejectedAsABadRequest()
+    {
+        var me = new AppUser { Id = 7, Username = "alex", DisplayName = "Alex" };
+        var users = new UserServiceStub { User = me, FoundUser = me };
+        var controller = BuildUsersController(users, new FollowServiceStub(), authenticated: true);
+
+        var result = await controller.Follow("alex", CancellationToken.None);
+
+        var problem = Assert.IsType<ProblemDetails>(Assert.IsType<BadRequestObjectResult>(result).Value);
+        Assert.Equal(StatusCodes.Status400BadRequest, problem.Status);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task FollowAndUnfollowReturnNoContentAndPairTheCallerWithTheTarget()
+    {
+        var users = new UserServiceStub
+        {
+            User = new AppUser { Id = 7, Username = "alex", DisplayName = "Alex" },
+            FoundUser = new AppUser { Id = 9, Username = "sam", DisplayName = "Sam" }
+        };
+        var follows = new FollowServiceStub();
+        var controller = BuildUsersController(users, follows, authenticated: true);
+
+        Assert.IsType<NoContentResult>(await controller.Follow("sam", CancellationToken.None));
+        Assert.IsType<NoContentResult>(await controller.Unfollow("sam", CancellationToken.None));
+
+        Assert.Equal((7, 9), follows.LastFollow);
+        Assert.Equal((7, 9), follows.LastUnfollow);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task UnknownUsernamesAreNotFoundAcrossTheFollowAndConnectionRoutes()
+    {
+        var users = new UserServiceStub { FoundUser = null };
+        var controller = BuildUsersController(users, new FollowServiceStub(), authenticated: true);
+
+        Assert.IsType<NotFoundResult>(await controller.Follow("ghost", CancellationToken.None));
+        Assert.IsType<NotFoundResult>(await controller.Unfollow("ghost", CancellationToken.None));
+        Assert.IsType<NotFoundResult>((await controller.GetFollowers("ghost", 0, null, CancellationToken.None)).Result);
+        Assert.IsType<NotFoundResult>((await controller.GetFollowing("ghost", 0, null, CancellationToken.None)).Result);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task VisitorsCanSearchAndBrowseConnectionsWithoutACallerIdentity()
+    {
+        var users = new UserServiceStub
+        {
+            FoundUser = new AppUser { Id = 9, Username = "sam", DisplayName = "Sam" },
+            SearchResults = [new UserSummaryDto { Id = 9, Username = "sam", DisplayName = "Sam" }]
+        };
+        var follows = new FollowServiceStub();
+        var controller = BuildUsersController(users, follows, authenticated: false);
+
+        var search = Assert.IsType<OkObjectResult>((await controller.SearchUsers("sa", 10, CancellationToken.None)).Result);
+        Assert.Single(Assert.IsAssignableFrom<IEnumerable<UserSummaryDto>>(search.Value));
+        Assert.Null(users.LastSearchCallerId);
+
+        Assert.IsType<OkObjectResult>((await controller.GetFollowers("sam", 0, null, CancellationToken.None)).Result);
+        Assert.Null(follows.LastCallerId);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void FollowWritesRequireAuthorizationWhileSearchAndConnectionReadsStayPublic()
+    {
+        Assert.NotNull(typeof(UsersController).GetMethod(nameof(UsersController.Follow))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.NotNull(typeof(UsersController).GetMethod(nameof(UsersController.Unfollow))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.Null(typeof(UsersController).GetMethod(nameof(UsersController.SearchUsers))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.Null(typeof(UsersController).GetMethod(nameof(UsersController.GetFollowers))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.Null(typeof(UsersController).GetMethod(nameof(UsersController.GetFollowing))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+    }
+
+    private static UsersController BuildUsersController(
+        UserServiceStub users,
+        FollowServiceStub follows,
+        bool authenticated)
+    {
+        var identity = authenticated
+            ? new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "auth0|caller")], "TestAuth")
+            : new ClaimsIdentity();
+
+        return new UsersController(users, new CatalogServiceStub(), follows)
+        {
+            ControllerContext = new ControllerContext
+            {
+                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+            }
+        };
     }
 
     private sealed class CatalogServiceStub : ICatalogService

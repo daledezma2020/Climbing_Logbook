@@ -6,7 +6,15 @@ export const testUser: UserSummary = {
   username: "alex",
   displayName: "Alex Climber",
   pictureUrl: null,
+  homePlace: null,
+  followerCount: 0,
+  isFollowedByMe: false,
+  isMe: false,
 };
+
+export function userSummary(overrides: Partial<UserSummary> = {}): UserSummary {
+  return { ...testUser, ...overrides };
+}
 
 export function currentUser(overrides: Partial<CurrentUser> = {}): CurrentUser {
   return {

@@ -10,6 +10,10 @@ export interface UserSummary {
   username: string;
   displayName: string;
   pictureUrl: string | null;
+  homePlace: Place | null;
+  followerCount: number;
+  isFollowedByMe: boolean;
+  isMe: boolean;
 }
 
 export interface CurrentUser {
@@ -56,7 +60,13 @@ export interface UserProfile {
   homePlace: Place | null;
   createdAt: string;
   stats: UserStats;
+  followerCount: number;
+  followingCount: number;
+  isFollowedByMe: boolean;
+  isMe: boolean;
 }
+
+export type ConnectionKind = "followers" | "following";
 
 export interface UpdateUserProfileInput {
   displayName: string;

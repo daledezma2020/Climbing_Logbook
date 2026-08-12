@@ -17,6 +17,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<PlaceExternalReference> PlaceExternalReferences { get; set; } = null!;
     public DbSet<Setter> Setters { get; set; } = null!;
     public DbSet<AppUser> AppUsers { get; set; } = null!;
+    public DbSet<Follow> Follows { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -88,6 +89,32 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<AppUser>()
             .HasIndex(u => u.Auth0Subject)
             .IsUnique();
+
+        modelBuilder.Entity<Follow>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_Follows_NoSelfFollow",
+                """
+                "FollowerId" <> "FolloweeId"
+                """));
+
+        modelBuilder.Entity<Follow>()
+            .HasOne(f => f.Follower)
+            .WithMany(u => u.Following)
+            .HasForeignKey(f => f.FollowerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Follow>()
+            .HasOne(f => f.Followee)
+            .WithMany(u => u.Followers)
+            .HasForeignKey(f => f.FolloweeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Follow>()
+            .HasIndex(f => new { f.FollowerId, f.FolloweeId })
+            .IsUnique();
+
+        modelBuilder.Entity<Follow>()
+            .HasIndex(f => f.FolloweeId);
 
         modelBuilder.Entity<LogEntry>()
             .HasOne(l => l.User)

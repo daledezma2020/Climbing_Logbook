@@ -48,6 +48,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<ISeedingService, SeedingService>();
 builder.Services.AddScoped<ISetterService, SetterService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
+builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<IAvatarStorage, LocalDiskAvatarStorage>();
 builder.Services.AddHttpContextAccessor();

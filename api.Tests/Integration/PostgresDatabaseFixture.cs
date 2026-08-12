@@ -93,9 +93,26 @@ public sealed class PostgresDatabaseFixture : IAsyncLifetime
             context,
             userInfo ?? new StubAuth0UserInfoClient(),
             catalogService,
+            new FollowService(context),
             avatarStorage ?? new StubAvatarStorage(),
             httpContextAccessor,
             NullLogger<UserService>.Instance);
+    }
+
+    public FollowService CreateFollowService() => new(CreateContext());
+
+    public async Task<int> CreateUserAsync(string username, string displayName)
+    {
+        await using var context = CreateContext();
+        var user = new AppUser
+        {
+            Auth0Subject = $"auth0|{username}",
+            Username = username,
+            DisplayName = displayName
+        };
+        context.AppUsers.Add(user);
+        await context.SaveChangesAsync();
+        return user.Id;
     }
 
     public async Task ResetAsync()
