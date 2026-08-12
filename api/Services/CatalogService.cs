@@ -7,6 +7,8 @@ namespace api.Services;
 
 public class CatalogService : ICatalogService
 {
+    private const int TopPlacesCount = 5;
+
     private readonly ApplicationDbContext _context;
     private readonly IOpenBetaClient _openBetaClient;
     private readonly IOsmClient _osmClient;
@@ -243,15 +245,127 @@ public class CatalogService : ICatalogService
         return boards.Select(CatalogMapping.ToDto).ToList();
     }
 
-    public async Task<List<LogEntryDto>> GetLogEntriesAsync()
+    public async Task<List<LogEntryDto>> GetLogEntriesAsync(int? userId = null)
     {
-        var entries = await IncludeLogEntrySummary(_context.LogEntries)
+        var query = IncludeLogEntrySummary(_context.LogEntries);
+
+        if (userId.HasValue)
+        {
+            query = query.Where(l => l.UserId == userId.Value);
+        }
+
+        var entries = await query
             .OrderByDescending(l => l.OccurredAt)
             .ToListAsync();
         return entries.Select(CatalogMapping.ToDto).ToList();
     }
 
-    public async Task<LogEntryDto> CreateLogEntryAsync(CreateLogEntryDto dto)
+    public async Task<PagedResult<LogEntryDto>> GetLogEntriesPagedAsync(
+        int? userId,
+        int skip,
+        int take,
+        CancellationToken cancellationToken = default)
+    {
+        skip = Math.Max(skip, 0);
+        take = Math.Clamp(take, 1, 100);
+
+        var query = IncludeLogEntrySummary(_context.LogEntries);
+
+        if (userId.HasValue)
+        {
+            query = query.Where(l => l.UserId == userId.Value);
+        }
+
+        var total = await query.CountAsync(cancellationToken);
+        var entries = await query
+            .OrderByDescending(l => l.OccurredAt)
+            .ThenByDescending(l => l.Id)
+            .Skip(skip)
+            .Take(take)
+            .ToListAsync(cancellationToken);
+
+        return new PagedResult<LogEntryDto>(entries.Select(CatalogMapping.ToDto).ToList(), total, skip, take);
+    }
+
+    public async Task<UserStatsDto> GetUserStatsAsync(int userId, CancellationToken cancellationToken = default)
+    {
+        var entries = await _context.LogEntries
+            .Where(l => l.UserId == userId)
+            .Select(l => new EntryFacts(
+                l.Status,
+                l.ClimbId,
+                l.PlaceId,
+                l.Climb!.Name,
+                l.Climb.Discipline,
+                l.Climb.GradeSystem,
+                l.Climb.Grade))
+            .ToListAsync(cancellationToken);
+
+        var stats = new UserStatsDto
+        {
+            TotalLogEntries = entries.Count,
+            DistinctClimbs = entries.Select(e => e.ClimbId).Distinct().Count(),
+            ByStatus = entries
+                .GroupBy(e => e.Status.ToString())
+                .ToDictionary(group => group.Key, group => group.Count()),
+            ByDiscipline = entries
+                .GroupBy(e => e.Discipline.ToString())
+                .ToDictionary(group => group.Key, group => group.Count()),
+            HardestGrades = entries
+                .Where(e => e.Status == LogEntryStatus.Completed)
+                .Select(e => new { Entry = e, Rank = GradeOrdering.Rank(e.GradeSystem, e.Grade) })
+                .Where(item => item.Rank.HasValue)
+                .GroupBy(item => item.Entry.GradeSystem)
+                .Select(group => group.OrderByDescending(item => item.Rank!.Value).First())
+                .OrderBy(item => item.Entry.GradeSystem)
+                .Select(item => new HardestGradeDto
+                {
+                    System = item.Entry.GradeSystem,
+                    Grade = item.Entry.Grade,
+                    ClimbId = item.Entry.ClimbId,
+                    ClimbName = item.Entry.ClimbName
+                })
+                .ToList()
+        };
+
+        var placeCounts = entries
+            .Where(e => e.PlaceId.HasValue)
+            .GroupBy(e => e.PlaceId!.Value)
+            .Select(group => new { PlaceId = group.Key, Count = group.Count() })
+            .OrderByDescending(item => item.Count)
+            .Take(TopPlacesCount)
+            .ToList();
+
+        if (placeCounts.Count > 0)
+        {
+            var placeIds = placeCounts.Select(item => item.PlaceId).ToList();
+            var places = await _context.Places
+                .Where(p => placeIds.Contains(p.Id))
+                .ToDictionaryAsync(p => p.Id, cancellationToken);
+
+            stats.TopPlaces = placeCounts
+                .Where(item => places.ContainsKey(item.PlaceId))
+                .Select(item => new PlaceVisitDto
+                {
+                    Place = CatalogMapping.ToDto(places[item.PlaceId]),
+                    Count = item.Count
+                })
+                .ToList();
+        }
+
+        return stats;
+    }
+
+    private record EntryFacts(
+        LogEntryStatus Status,
+        int ClimbId,
+        int? PlaceId,
+        string ClimbName,
+        ClimbDiscipline Discipline,
+        GradeSystem GradeSystem,
+        string Grade);
+
+    public async Task<LogEntryDto> CreateLogEntryAsync(CreateLogEntryDto dto, int userId)
     {
         if (!await _context.Climbs.AnyAsync(c => c.Id == dto.ClimbId))
         {
@@ -267,6 +381,7 @@ public class CatalogService : ICatalogService
         {
             ClimbId = dto.ClimbId,
             PlaceId = dto.PlaceId,
+            UserId = userId,
             OccurredAt = dto.OccurredAt ?? DateTime.UtcNow,
             Status = dto.Status,
             Rating = dto.Rating,
@@ -379,6 +494,7 @@ public class CatalogService : ICatalogService
     private static IQueryable<LogEntry> IncludeLogEntrySummary(IQueryable<LogEntry> query)
     {
         return query
+            .Include(l => l.User)
             .Include(l => l.Place)
             .Include(l => l.Climb)!.ThenInclude(c => c!.Place)
             .Include(l => l.Climb)!.ThenInclude(c => c!.BoardConfiguration)

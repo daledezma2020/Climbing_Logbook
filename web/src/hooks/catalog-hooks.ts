@@ -51,7 +51,7 @@ export function useClimbs() {
   return { climbs, loading, error, refetch: fetchClimbs, deleteClimb };
 }
 
-export function useLogEntries() {
+export function useLogEntries(userId?: number) {
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +60,9 @@ export function useLogEntries() {
     try {
       setLoading(true);
       setError(null);
-      setEntries(await apiFetch<LogEntry[]>("/logentries"));
+      const path =
+        userId === undefined ? "/logentries" : `/logentries?userId=${userId}`;
+      setEntries(await apiFetch<LogEntry[]>(path));
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch log entries",
@@ -68,7 +70,7 @@ export function useLogEntries() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     fetchEntries();

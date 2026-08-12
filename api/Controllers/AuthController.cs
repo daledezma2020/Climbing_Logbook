@@ -1,6 +1,8 @@
+using api.DTO;
+using api.Interfaces;
+using api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace api.Controllers;
 
@@ -8,15 +10,18 @@ namespace api.Controllers;
 [Route("api/[controller]")]
 public class AuthController : ControllerBase
 {
+    private readonly IUserService _userService;
+
+    public AuthController(IUserService userService)
+    {
+        _userService = userService;
+    }
+
     [Authorize]
     [HttpGet("me")]
-    public IActionResult Me()
+    public async Task<ActionResult<CurrentUserDto>> Me(CancellationToken cancellationToken)
     {
-        return Ok(new
-        {
-            subject = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub"),
-            name = User.FindFirstValue("name"),
-            email = User.FindFirstValue(ClaimTypes.Email) ?? User.FindFirstValue("email")
-        });
+        var user = await _userService.EnsureUserAsync(User, cancellationToken);
+        return Ok(CatalogMapping.ToCurrentUserDto(user));
     }
 }

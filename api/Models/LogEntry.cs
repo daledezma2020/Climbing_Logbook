@@ -7,6 +7,9 @@ public class LogEntry
     [Key]
     public int Id { get; set; }
 
+    public int UserId { get; set; }
+    public AppUser? User { get; set; }
+
     public int ClimbId { get; set; }
     public Climb? Climb { get; set; }
 

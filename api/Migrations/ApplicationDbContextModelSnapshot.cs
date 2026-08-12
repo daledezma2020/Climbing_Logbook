@@ -21,6 +21,60 @@ namespace api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("api.Models.AppUser", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Auth0Subject")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("Bio")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<int?>("HomePlaceId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PictureUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Auth0Subject")
+                        .IsUnique();
+
+                    b.HasIndex("HomePlaceId");
+
+                    b.ToTable("AppUsers");
+                });
+
             modelBuilder.Entity("api.Models.BoardConfiguration", b =>
                 {
                     b.Property<int>("Id")
@@ -121,7 +175,7 @@ namespace api.Migrations
 
                     b.ToTable("Climbs", t =>
                         {
-                            t.HasCheckConstraint("CK_Climbs_Context", "\r\n(\r\n    \"PlaceId\" IS NOT NULL\r\n    AND \"BoardConfigurationId\" IS NULL\r\n    AND \"CustomLocationName\" IS NULL\r\n    AND \"CustomLocationLatitude\" IS NULL\r\n    AND \"CustomLocationLongitude\" IS NULL\r\n)\r\nOR (\r\n    \"PlaceId\" IS NULL\r\n    AND \"BoardConfigurationId\" IS NOT NULL\r\n    AND \"CustomLocationName\" IS NULL\r\n    AND \"CustomLocationLatitude\" IS NULL\r\n    AND \"CustomLocationLongitude\" IS NULL\r\n)\r\nOR (\r\n    \"PlaceId\" IS NULL\r\n    AND \"BoardConfigurationId\" IS NULL\r\n    AND \"CustomLocationName\" IS NOT NULL\r\n    AND \"CustomLocationLatitude\" IS NOT NULL\r\n    AND \"CustomLocationLongitude\" IS NOT NULL\r\n)");
+                            t.HasCheckConstraint("CK_Climbs_Context", "(\n    \"PlaceId\" IS NOT NULL\n    AND \"BoardConfigurationId\" IS NULL\n    AND \"CustomLocationName\" IS NULL\n    AND \"CustomLocationLatitude\" IS NULL\n    AND \"CustomLocationLongitude\" IS NULL\n)\nOR (\n    \"PlaceId\" IS NULL\n    AND \"BoardConfigurationId\" IS NOT NULL\n    AND \"CustomLocationName\" IS NULL\n    AND \"CustomLocationLatitude\" IS NULL\n    AND \"CustomLocationLongitude\" IS NULL\n)\nOR (\n    \"PlaceId\" IS NULL\n    AND \"BoardConfigurationId\" IS NULL\n    AND \"CustomLocationName\" IS NOT NULL\n    AND \"CustomLocationLatitude\" IS NOT NULL\n    AND \"CustomLocationLongitude\" IS NOT NULL\n)");
                         });
                 });
 
@@ -169,10 +223,6 @@ namespace api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Author")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
                     b.Property<int>("ClimbId")
                         .HasColumnType("integer");
 
@@ -184,9 +234,14 @@ namespace api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ClimbId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("Comments");
                 });
@@ -224,11 +279,16 @@ namespace api.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ClimbId");
 
                     b.HasIndex("PlaceId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("LogEntries");
                 });
@@ -341,6 +401,16 @@ namespace api.Migrations
                     b.ToTable("Setters");
                 });
 
+            modelBuilder.Entity("api.Models.AppUser", b =>
+                {
+                    b.HasOne("api.Models.Place", "HomePlace")
+                        .WithMany()
+                        .HasForeignKey("HomePlaceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("HomePlace");
+                });
+
             modelBuilder.Entity("api.Models.Climb", b =>
                 {
                     b.HasOne("api.Models.BoardConfiguration", "BoardConfiguration")
@@ -384,7 +454,15 @@ namespace api.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("api.Models.AppUser", "User")
+                        .WithMany("Comments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Climb");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("api.Models.LogEntry", b =>
@@ -400,9 +478,17 @@ namespace api.Migrations
                         .HasForeignKey("PlaceId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("api.Models.AppUser", "User")
+                        .WithMany("LogEntries")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Climb");
 
                     b.Navigation("Place");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("api.Models.Place", b =>
@@ -424,6 +510,13 @@ namespace api.Migrations
                         .IsRequired();
 
                     b.Navigation("Place");
+                });
+
+            modelBuilder.Entity("api.Models.AppUser", b =>
+                {
+                    b.Navigation("Comments");
+
+                    b.Navigation("LogEntries");
                 });
 
             modelBuilder.Entity("api.Models.BoardConfiguration", b =>

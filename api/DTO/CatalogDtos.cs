@@ -50,6 +50,8 @@ public class ClimbSummaryDto
 public class LogEntryDto
 {
     public int Id { get; set; }
+    public int UserId { get; set; }
+    public UserSummaryDto? User { get; set; }
     public int ClimbId { get; set; }
     public ClimbSummaryDto? Climb { get; set; }
     public int? PlaceId { get; set; }

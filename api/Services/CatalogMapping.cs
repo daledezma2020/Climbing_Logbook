@@ -58,9 +58,32 @@ public static class CatalogMapping
         Sources = climb.ExternalReferences.Select(r => r.Provider.ToString()).Distinct().ToArray()
     };
 
+    public static UserSummaryDto ToSummaryDto(AppUser user) => new()
+    {
+        Id = user.Id,
+        Username = user.Username,
+        DisplayName = user.DisplayName,
+        PictureUrl = user.PictureUrl
+    };
+
+    public static CurrentUserDto ToCurrentUserDto(AppUser user) => new()
+    {
+        Id = user.Id,
+        Username = user.Username,
+        DisplayName = user.DisplayName,
+        Email = user.Email,
+        Bio = user.Bio,
+        PictureUrl = user.PictureUrl,
+        HomePlaceId = user.HomePlaceId,
+        HomePlace = user.HomePlace == null ? null : ToDto(user.HomePlace),
+        CreatedAt = user.CreatedAt
+    };
+
     public static LogEntryDto ToDto(LogEntry entry) => new()
     {
         Id = entry.Id,
+        UserId = entry.UserId,
+        User = entry.User == null ? null : ToSummaryDto(entry.User),
         ClimbId = entry.ClimbId,
         Climb = entry.Climb == null ? null : ToDto(entry.Climb),
         PlaceId = entry.PlaceId,
