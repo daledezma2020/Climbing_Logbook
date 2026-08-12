@@ -9,3 +9,6 @@ dist/
 # Local environment files
 .env
 .env.local
+
+# Locally stored avatar uploads
+api/uploads/

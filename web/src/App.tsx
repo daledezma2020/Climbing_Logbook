@@ -4,6 +4,8 @@ import Home from '@/pages/Home';
 import Logbook from '@/pages/Logbook';
 import Climbs from '@/pages/Climbs';
 import LogClimb from '@/pages/LogClimb';
+import Profile from '@/pages/Profile';
+import EditProfile from '@/pages/EditProfile';
 
 const router = createBrowserRouter([
   {
@@ -25,6 +27,14 @@ const router = createBrowserRouter([
       {
         path: 'log/new',
         element: <LogClimb />,
+      },
+      {
+        path: 'users/:username',
+        element: <Profile />,
+      },
+      {
+        path: 'profile/edit',
+        element: <EditProfile />,
       },
     ],
   },
