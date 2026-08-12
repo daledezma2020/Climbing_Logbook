@@ -68,7 +68,10 @@ public sealed class PostgresDatabaseFixture : IAsyncLifetime
         return user.Id;
     }
 
-    public UserService CreateUserService(IAuth0UserInfoClient? userInfo = null, string? bearerToken = null)
+    public UserService CreateUserService(
+        IAuth0UserInfoClient? userInfo = null,
+        string? bearerToken = null,
+        IAvatarStorage? avatarStorage = null)
     {
         var httpContextAccessor = new HttpContextAccessor();
         if (bearerToken != null)
@@ -78,9 +81,19 @@ public sealed class PostgresDatabaseFixture : IAsyncLifetime
             httpContextAccessor.HttpContext = httpContext;
         }
 
+        var context = CreateContext();
+        var catalogService = new CatalogService(
+            context,
+            new StubOpenBetaClient(),
+            new StubOsmClient(),
+            new SetterService(context),
+            NullLogger<CatalogService>.Instance);
+
         return new UserService(
-            CreateContext(),
+            context,
             userInfo ?? new StubAuth0UserInfoClient(),
+            catalogService,
+            avatarStorage ?? new StubAvatarStorage(),
             httpContextAccessor,
             NullLogger<UserService>.Instance);
     }
@@ -136,5 +149,20 @@ internal sealed class StubAuth0UserInfoClient : IAuth0UserInfoClient
     {
         CallCount++;
         return Task.FromResult(UserInfo);
+    }
+}
+
+internal sealed class StubAvatarStorage : IAvatarStorage
+{
+    public string SavedUrl { get; set; } = "https://localhost/uploads/avatars/stub.png";
+    public string? LastDeletedUrl { get; private set; }
+
+    public Task<string> SaveAsync(IFormFile file, CancellationToken cancellationToken = default)
+        => Task.FromResult(SavedUrl);
+
+    public Task DeleteAsync(string? url, CancellationToken cancellationToken = default)
+    {
+        LastDeletedUrl = url;
+        return Task.CompletedTask;
     }
 }

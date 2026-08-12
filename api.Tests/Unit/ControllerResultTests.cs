@@ -149,6 +149,15 @@ public class ControllerResultTests
             return Task.FromResult(new LogEntryDto { Id = 1, ClimbId = dto.ClimbId, UserId = userId });
         }
         public Task<SearchResponseDto> SearchAsync(string query, int limit) => Task.FromResult(new SearchResponseDto());
+
+        public Task<PagedResult<LogEntryDto>> GetLogEntriesPagedAsync(int? userId, int skip, int take, CancellationToken cancellationToken = default)
+        {
+            LastRequestedUserId = userId;
+            return Task.FromResult(new PagedResult<LogEntryDto>([], 0, skip, take));
+        }
+
+        public Task<UserStatsDto> GetUserStatsAsync(int userId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new UserStatsDto());
     }
 
     private sealed class SetterServiceStub : ISetterService
