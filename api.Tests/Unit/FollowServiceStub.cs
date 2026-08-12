@@ -45,6 +45,11 @@ internal sealed class FollowServiceStub : IFollowService
         CancellationToken cancellationToken = default) =>
         Task.FromResult(Following ? candidateIds.ToHashSet() : []);
 
+    public List<int> FollowingIds { get; set; } = [];
+
+    public Task<List<int>> GetFollowingIdsAsync(int followerId, CancellationToken cancellationToken = default) =>
+        Task.FromResult(FollowingIds);
+
     public Task<PagedResult<UserSummaryDto>> GetFollowersAsync(
         int userId,
         int? callerId,

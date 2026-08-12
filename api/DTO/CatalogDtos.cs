@@ -62,6 +62,9 @@ public class LogEntryDto
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public int LikeCount { get; set; }
+    public int CommentCount { get; set; }
+    public bool IsLikedByMe { get; set; }
 }
 
 public class CreateLogEntryDto

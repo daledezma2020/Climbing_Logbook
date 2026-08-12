@@ -18,7 +18,7 @@ public class ControllerResultTests
     public async Task ClimbLookupAndDeleteTranslateMissingRecordsToNotFound()
     {
         var service = new CatalogServiceStub { Climb = null, DeleteResult = false };
-        var controller = new ClimbsController(service);
+        var controller = new ClimbsController(service, new UserServiceStub(), new SocialServiceStub());
 
         Assert.IsType<NotFoundResult>((await controller.GetClimb(99)).Result);
         Assert.IsType<NotFoundResult>(await controller.DeleteClimb(99));
@@ -29,7 +29,7 @@ public class ControllerResultTests
     public async Task ManualClimbCreationReturnsItsLookupRoute()
     {
         var created = new ClimbSummaryDto { Id = 42, Name = "Created", Grade = "V3" };
-        var controller = new ClimbsController(new CatalogServiceStub { Climb = created });
+        var controller = new ClimbsController(new CatalogServiceStub { Climb = created }, new UserServiceStub(), new SocialServiceStub());
 
         var result = Assert.IsType<CreatedAtActionResult>(
             (await controller.CreateManualClimb(new CreateManualClimbDto { Name = "Created", Grade = "V3" })).Result);
@@ -45,7 +45,7 @@ public class ControllerResultTests
     {
         var service = new CatalogServiceStub();
 
-        var climbResult = (await new ClimbsController(service).ImportOpenBetaClimb("missing")).Result;
+        var climbResult = (await new ClimbsController(service, new UserServiceStub(), new SocialServiceStub()).ImportOpenBetaClimb("missing")).Result;
         var placeResult = (await new PlacesController(service).ImportOsmPlace("node", "1")).Result;
 
         Assert.Equal("OpenBeta climb could not be imported.", Assert.IsType<BadRequestObjectResult>(climbResult).Value);
@@ -74,13 +74,15 @@ public class ControllerResultTests
     {
         var service = new CatalogServiceStub();
         var userService = new UserServiceStub { User = new AppUser { Id = 12, Username = "alex", DisplayName = "Alex" } };
-        var controller = new LogEntriesController(service, userService);
+        var controller = BuildLogEntriesController(service, userService, new SocialServiceStub(), authenticated: true);
 
         var result = Assert.IsType<CreatedAtActionResult>(
             (await controller.CreateLogEntry(new CreateLogEntryDto { ClimbId = 3 }, CancellationToken.None)).Result);
 
         Assert.Equal(12, service.LastCreatedForUserId);
         Assert.Equal(12, Assert.IsType<LogEntryDto>(result.Value).UserId);
+        Assert.Equal(nameof(LogEntriesController.GetLogEntry), result.ActionName);
+        Assert.Equal(1, result.RouteValues?["id"]);
     }
 
     [Fact]
@@ -96,13 +98,114 @@ public class ControllerResultTests
     public async Task LogEntryReadsPassTheOptionalOwnerFilterThrough()
     {
         var service = new CatalogServiceStub();
-        var controller = new LogEntriesController(service, new UserServiceStub());
+        var controller = BuildLogEntriesController(
+            service, new UserServiceStub(), new SocialServiceStub(), authenticated: false);
 
-        await controller.GetLogEntries(null);
+        await controller.GetLogEntries(null, CancellationToken.None);
         Assert.Null(service.LastRequestedUserId);
 
-        await controller.GetLogEntries(9);
+        await controller.GetLogEntries(9, CancellationToken.None);
         Assert.Equal(9, service.LastRequestedUserId);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task LikingAMissingLogEntryIsNotFoundWhileASuccessfulLikeIsNoContent()
+    {
+        var users = new UserServiceStub { User = new AppUser { Id = 7, Username = "alex", DisplayName = "Alex" } };
+        var social = new SocialServiceStub { TargetExists = false };
+        var controller = BuildLogEntriesController(new CatalogServiceStub(), users, social, authenticated: true);
+
+        Assert.IsType<NotFoundResult>(await controller.Like(99, CancellationToken.None));
+        Assert.IsType<NotFoundResult>(await controller.Unlike(99, CancellationToken.None));
+
+        social.TargetExists = true;
+        Assert.IsType<NoContentResult>(await controller.Like(5, CancellationToken.None));
+        Assert.IsType<NoContentResult>(await controller.Unlike(5, CancellationToken.None));
+
+        Assert.Equal((7, 5), social.LastLike);
+        Assert.Equal((7, 5), social.LastUnlike);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task CommentingOnAMissingTargetIsNotFound()
+    {
+        var users = new UserServiceStub { User = new AppUser { Id = 7, Username = "alex", DisplayName = "Alex" } };
+        var social = new SocialServiceStub { TargetExists = false };
+        var dto = new CreateCommentDto { Content = "nice send" };
+
+        var entries = BuildLogEntriesController(new CatalogServiceStub(), users, social, authenticated: true);
+        Assert.IsType<NotFoundResult>((await entries.AddComment(99, dto, CancellationToken.None)).Result);
+
+        var climbs = new ClimbsController(new CatalogServiceStub(), users, social)
+        {
+            ControllerContext = BuildContext(authenticated: true)
+        };
+        Assert.IsType<NotFoundResult>((await climbs.AddComment(99, dto, CancellationToken.None)).Result);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task DeletingSomeoneElsesCommentIsForbiddenAndAMissingOneIsNotFound()
+    {
+        var users = new UserServiceStub { User = new AppUser { Id = 7, Username = "alex", DisplayName = "Alex" } };
+        var social = new SocialServiceStub();
+        var controller = new CommentsController(users, social)
+        {
+            ControllerContext = BuildContext(authenticated: true)
+        };
+
+        social.DeletionResult = CommentDeletion.NotFound;
+        Assert.IsType<NotFoundResult>(await controller.DeleteComment(1, CancellationToken.None));
+
+        social.DeletionResult = CommentDeletion.Forbidden;
+        Assert.IsType<ForbidResult>(await controller.DeleteComment(1, CancellationToken.None));
+
+        social.DeletionResult = CommentDeletion.Deleted;
+        Assert.IsType<NoContentResult>(await controller.DeleteComment(1, CancellationToken.None));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public async Task TheFeedIsBuiltForTheAuthenticatedCaller()
+    {
+        var users = new UserServiceStub { User = new AppUser { Id = 7, Username = "alex", DisplayName = "Alex" } };
+        var social = new SocialServiceStub();
+        var controller = new FeedController(users, social)
+        {
+            ControllerContext = BuildContext(authenticated: true)
+        };
+
+        Assert.IsType<OkObjectResult>((await controller.GetFeed(0, null, CancellationToken.None)).Result);
+        Assert.Equal(7, social.LastFeedCallerId);
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void SocialWritesRequireAuthorizationWhileCommentReadsStayPublic()
+    {
+        Assert.NotNull(typeof(FeedController).GetMethod(nameof(FeedController.GetFeed))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.NotNull(typeof(LogEntriesController).GetMethod(nameof(LogEntriesController.Like))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.NotNull(typeof(LogEntriesController).GetMethod(nameof(LogEntriesController.Unlike))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.NotNull(typeof(LogEntriesController).GetMethod(nameof(LogEntriesController.AddComment))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.NotNull(typeof(ClimbsController).GetMethod(nameof(ClimbsController.AddComment))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.NotNull(typeof(CommentsController).GetMethod(nameof(CommentsController.DeleteComment))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.NotNull(typeof(UsersController).GetMethod(nameof(UsersController.GetMyStats))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+
+        Assert.Null(typeof(LogEntriesController).GetMethod(nameof(LogEntriesController.GetComments))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.Null(typeof(ClimbsController).GetMethod(nameof(ClimbsController.GetComments))!
+            .GetCustomAttribute<AuthorizeAttribute>());
+        Assert.Null(typeof(ClimbsController).GetMethod(nameof(ClimbsController.GetClimbLogEntries))!
+            .GetCustomAttribute<AuthorizeAttribute>());
     }
 
     [Fact]
@@ -203,21 +306,38 @@ public class ControllerResultTests
             .GetCustomAttribute<AuthorizeAttribute>());
     }
 
-    private static UsersController BuildUsersController(
-        UserServiceStub users,
-        FollowServiceStub follows,
-        bool authenticated)
+    private static ControllerContext BuildContext(bool authenticated)
     {
         var identity = authenticated
             ? new ClaimsIdentity([new Claim(ClaimTypes.NameIdentifier, "auth0|caller")], "TestAuth")
             : new ClaimsIdentity();
 
-        return new UsersController(users, new CatalogServiceStub(), follows)
+        return new ControllerContext
         {
-            ControllerContext = new ControllerContext
-            {
-                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
-            }
+            HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(identity) }
+        };
+    }
+
+    private static UsersController BuildUsersController(
+        UserServiceStub users,
+        FollowServiceStub follows,
+        bool authenticated)
+    {
+        return new UsersController(users, new CatalogServiceStub(), follows, new SocialServiceStub())
+        {
+            ControllerContext = BuildContext(authenticated)
+        };
+    }
+
+    private static LogEntriesController BuildLogEntriesController(
+        CatalogServiceStub catalog,
+        UserServiceStub users,
+        SocialServiceStub social,
+        bool authenticated)
+    {
+        return new LogEntriesController(catalog, users, social)
+        {
+            ControllerContext = BuildContext(authenticated)
         };
     }
 
@@ -260,6 +380,26 @@ public class ControllerResultTests
 
         public Task<UserStatsDto> GetUserStatsAsync(int userId, CancellationToken cancellationToken = default) =>
             Task.FromResult(new UserStatsDto());
+
+        public LogEntryDto? LogEntry { get; set; }
+        public IReadOnlyCollection<int>? LastFeedUserIds { get; private set; }
+
+        public Task<LogEntryDto?> GetLogEntryAsync(int id, CancellationToken cancellationToken = default) =>
+            Task.FromResult(LogEntry);
+
+        public Task<PagedResult<LogEntryDto>> GetLogEntriesForUsersPagedAsync(
+            IReadOnlyCollection<int> userIds, int skip, int take, CancellationToken cancellationToken = default)
+        {
+            LastFeedUserIds = userIds;
+            return Task.FromResult(new PagedResult<LogEntryDto>([], 0, skip, take));
+        }
+
+        public Task<PagedResult<LogEntryDto>> GetClimbLogEntriesPagedAsync(
+            int climbId, int skip, int take, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new PagedResult<LogEntryDto>([], 0, skip, take));
+
+        public Task<HomeStatsDto> GetHomeStatsAsync(int userId, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new HomeStatsDto());
     }
 
     private sealed class SetterServiceStub : ISetterService

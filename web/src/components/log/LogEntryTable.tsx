@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Star, MapPin } from "lucide-react";
 import {
   Table,
@@ -8,22 +9,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { placeLabel } from "@/lib/log-entry";
 import type { LogEntry } from "@/types/catalog";
 
 interface LogEntryTableProps {
   entries: LogEntry[];
   loading: boolean;
   emptyMessage: string;
-}
-
-function placeLabel(entry: LogEntry): string | null {
-  return (
-    entry.place?.name ??
-    entry.climb?.place?.name ??
-    entry.climb?.boardConfiguration?.name ??
-    entry.climb?.customLocation?.name ??
-    null
-  );
 }
 
 export default function LogEntryTable({
@@ -66,7 +58,16 @@ export default function LogEntryTable({
                     {new Date(entry.occurredAt).toLocaleDateString()}
                   </TableCell>
                   <TableCell className="font-medium">
-                    {entry.climb?.name ?? "Unknown climb"}
+                    {entry.climb ? (
+                      <Link
+                        to={`/climbs/${entry.climbId}`}
+                        className="hover:underline"
+                      >
+                        {entry.climb.name}
+                      </Link>
+                    ) : (
+                      "Unknown climb"
+                    )}
                   </TableCell>
                   <TableCell>
                     {entry.climb?.grade ? (

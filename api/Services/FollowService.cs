@@ -89,6 +89,14 @@ public class FollowService : IFollowService
         return followed.ToHashSet();
     }
 
+    public Task<List<int>> GetFollowingIdsAsync(int followerId, CancellationToken cancellationToken = default)
+    {
+        return _context.Follows
+            .Where(f => f.FollowerId == followerId)
+            .Select(f => f.FolloweeId)
+            .ToListAsync(cancellationToken);
+    }
+
     public Task<PagedResult<UserSummaryDto>> GetFollowersAsync(
         int userId,
         int? callerId,

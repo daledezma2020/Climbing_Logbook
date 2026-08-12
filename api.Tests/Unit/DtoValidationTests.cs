@@ -38,4 +38,34 @@ public class DtoValidationTests
         var dto = new CreateCustomLocationDto { Name = "Test", Latitude = latitude, Longitude = longitude };
         Assert.False(Validator.TryValidateObject(dto, new ValidationContext(dto), [], true));
     }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [Trait("Category", "Unit")]
+    public void CommentsRejectEmptyContent(string content)
+    {
+        var dto = new CreateCommentDto { Content = content };
+        Assert.False(Validator.TryValidateObject(dto, new ValidationContext(dto), [], true));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void CommentsRejectContentBeyondOneThousandCharacters()
+    {
+        var dto = new CreateCommentDto { Content = new string('x', 1001) };
+        Assert.False(Validator.TryValidateObject(dto, new ValidationContext(dto), [], true));
+
+        dto.Content = new string('x', 1000);
+        Assert.True(Validator.TryValidateObject(dto, new ValidationContext(dto), [], true));
+    }
+
+    [Fact]
+    [Trait("Category", "Unit")]
+    public void CommentsCannotCarryAClientSuppliedAuthorOrTarget()
+    {
+        Assert.Null(typeof(CreateCommentDto).GetProperty("UserId"));
+        Assert.Null(typeof(CreateCommentDto).GetProperty("ClimbId"));
+        Assert.Null(typeof(CreateCommentDto).GetProperty("LogEntryId"));
+    }
 }

@@ -50,6 +50,7 @@ builder.Services.AddScoped<ISetterService, SetterService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IFollowService, FollowService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ISocialService, SocialService>();
 builder.Services.AddScoped<IAvatarStorage, LocalDiskAvatarStorage>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddHttpClient<IOpenBetaClient, OpenBetaClient>();

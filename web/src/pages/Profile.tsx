@@ -4,7 +4,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { CalendarDays, MapPin, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import StatCard from "@/components/stats/StatCard";
 import UserAvatar from "@/components/user/UserAvatar";
 import FollowButton from "@/components/user/FollowButton";
 import ErrorToast from "@/components/log/ErrorToast";
@@ -17,19 +17,6 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
       <div className="max-w-5xl mx-auto space-y-6">{children}</div>
     </div>
-  );
-}
-
-function StatCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-slate-600">
-          {title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
-    </Card>
   );
 }
 

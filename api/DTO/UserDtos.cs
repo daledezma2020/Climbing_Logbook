@@ -57,6 +57,46 @@ public class UserStatsDto
     public List<PlaceVisitDto> TopPlaces { get; set; } = [];
 }
 
+// Served from GET api/users/me/stats. Grouped so the home page can fetch every
+// KPI in one call and render only the cards the user has turned on.
+public class HomeStatsDto
+{
+    public CoreStatsDto Core { get; set; } = new();
+    public ActivityStatsDto Activity { get; set; } = new();
+    public PlacesStatsDto Places { get; set; } = new();
+    public SocialStatsDto Social { get; set; } = new();
+}
+
+public class CoreStatsDto
+{
+    public int TotalSends { get; set; }
+    public int TotalAttempts { get; set; }
+    public int DistinctClimbs { get; set; }
+    public double SendRate { get; set; }
+    public List<HardestGradeDto> HardestGrades { get; set; } = [];
+}
+
+public class ActivityStatsDto
+{
+    public int SendsThisMonth { get; set; }
+    public int DaysClimbedLast30 { get; set; }
+    public int CurrentStreakWeeks { get; set; }
+    public DateTime? LastClimbedAt { get; set; }
+}
+
+public class PlacesStatsDto
+{
+    public List<PlaceVisitDto> TopPlaces { get; set; } = [];
+    public Dictionary<string, int> ByDiscipline { get; set; } = [];
+}
+
+public class SocialStatsDto
+{
+    public int FollowerCount { get; set; }
+    public int FollowingCount { get; set; }
+    public int FollowingActiveThisWeek { get; set; }
+}
+
 public class HardestGradeDto
 {
     public GradeSystem System { get; set; }

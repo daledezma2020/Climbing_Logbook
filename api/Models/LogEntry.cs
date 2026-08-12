@@ -26,6 +26,10 @@ public class LogEntry
     [StringLength(1000)]
     public string? Notes { get; set; }
 
+    public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+    public ICollection<Like> Likes { get; set; } = new List<Like>();
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime? UpdatedAt { get; set; }
