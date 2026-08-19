@@ -6,7 +6,7 @@
   "git": {
     "worktreesEnabled": true,
     "autoCleanup": true,
-    "defaultBaseBranch": "main",
+    "defaultBaseBranch": "develop",
     "copyFiles": [
       "web/.env.local"
     ],
