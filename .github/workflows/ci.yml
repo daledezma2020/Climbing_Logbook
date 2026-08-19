@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore api.Tests/api.Tests.csproj
+      - name: Build API and tests
+        run: dotnet build api.Tests/api.Tests.csproj --configuration Release --no-restore
+      - name: Run backend unit tests
+        run: dotnet test api.Tests/api.Tests.csproj --configuration Release --no-build --filter "Category=Unit" --collect:"XPlat Code Coverage" --logger "trx;LogFileName=unit.trx" --results-directory TestResults/backend-unit
+      - name: Summarize backend unit checks
+        if: always()
+        run: echo "### Backend unit tests and coverage" >> "$GITHUB_STEP_SUMMARY" && echo "TRX results and Cobertura coverage are attached as backend-unit-results." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-unit-results
+          path: TestResults/backend-unit
+          if-no-files-found: warn
+
+  backend-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: climbing_logbook_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d climbing_logbook_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      CLIMBING_LOGBOOK_TEST_CONNECTION_STRING: Host=localhost;Port=5432;Database=climbing_logbook_test;Username=postgres;Password=postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Restore
+        run: dotnet restore api.Tests/api.Tests.csproj
+      - name: Build tests
+        run: dotnet build api.Tests/api.Tests.csproj --configuration Release --no-restore
+      - name: Run PostgreSQL integration tests
+        run: dotnet test api.Tests/api.Tests.csproj --configuration Release --no-build --filter "Category=Integration" --collect:"XPlat Code Coverage" --logger "trx;LogFileName=integration.trx" --results-directory TestResults/backend-integration
+      - name: Summarize backend integration checks
+        if: always()
+        run: echo "### PostgreSQL integration tests and coverage" >> "$GITHUB_STEP_SUMMARY" && echo "TRX results and Cobertura coverage are attached as backend-integration-results." >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-integration-results
+          path: TestResults/backend-integration
+          if-no-files-found: warn
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Run frontend tests with coverage
+        run: npm run test:ci
+      - name: Summarize frontend coverage
+        if: always()
+        run: |
+          node -e "const c=require('./coverage/coverage-summary.json').total; console.log('### Frontend coverage\n\n| Metric | Percent |\n| --- | ---: |\n'+Object.entries(c).map(([k,v])=>'| '+k+' | '+v.pct+'% |').join('\n'))" >> "$GITHUB_STEP_SUMMARY"
+      - name: Build frontend
+        run: npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: web/coverage
+          if-no-files-found: warn

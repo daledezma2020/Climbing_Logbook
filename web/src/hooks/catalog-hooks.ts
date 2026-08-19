@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { apiFetch } from "@/lib/api";
+import { ApiError, apiFetch } from "@/lib/api";
 import type {
   BoardConfiguration,
   Climb,
@@ -10,6 +10,9 @@ import type {
   Place,
   SearchResponse,
 } from "@/types/catalog";
+import type { PagedResult } from "@/types/user";
+
+const CLIMB_PAGE_SIZE = 25;
 
 export function useClimbs() {
   const { getAccessTokenSilently, loginWithRedirect, isAuthenticated } =
@@ -49,6 +52,115 @@ export function useClimbs() {
   );
 
   return { climbs, loading, error, refetch: fetchClimbs, deleteClimb };
+}
+
+export function useClimb(id: number | undefined) {
+  const [climb, setClimb] = useState<Climb | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
+
+  const fetchClimb = useCallback(async () => {
+    if (id === undefined || Number.isNaN(id)) {
+      setClimb(null);
+      setNotFound(true);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      setNotFound(false);
+      setClimb(await apiFetch<Climb>(`/climbs/${id}`));
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        setNotFound(true);
+        setClimb(null);
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to load this climb");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    void fetchClimb();
+  }, [fetchClimb]);
+
+  return { climb, loading, error, notFound, refetch: fetchClimb };
+}
+
+export function useClimbLogEntries(id: number | undefined) {
+  const { getAccessTokenSilently, isAuthenticated, isLoading: authLoading } =
+    useAuth0();
+  const [entries, setEntries] = useState<LogEntry[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPage = useCallback(
+    async (skip: number) => {
+      if (id === undefined || Number.isNaN(id)) {
+        setEntries([]);
+        setTotal(0);
+        return;
+      }
+
+      try {
+        setError(null);
+        const accessToken = isAuthenticated
+          ? await getAccessTokenSilently()
+          : undefined;
+        const page = await apiFetch<PagedResult<LogEntry>>(
+          `/climbs/${id}/logentries?skip=${skip}&take=${CLIMB_PAGE_SIZE}`,
+          { accessToken },
+        );
+        setEntries((current) =>
+          skip === 0 ? page.items : [...current, ...page.items],
+        );
+        setTotal(page.total);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load ascents");
+      }
+    },
+    [id, isAuthenticated, getAccessTokenSilently],
+  );
+
+  const reload = useCallback(async () => {
+    try {
+      setLoading(true);
+      await fetchPage(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchPage]);
+
+  useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+    void reload();
+  }, [authLoading, reload]);
+
+  const loadMore = useCallback(async () => {
+    setLoadingMore(true);
+    await fetchPage(entries.length);
+    setLoadingMore(false);
+  }, [entries.length, fetchPage]);
+
+  return {
+    entries,
+    total,
+    loading,
+    loadingMore,
+    error,
+    hasMore: entries.length < total,
+    loadMore,
+    refetch: reload,
+  };
 }
 
 export function useLogEntries(userId?: number) {

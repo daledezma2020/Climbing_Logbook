@@ -223,7 +223,7 @@ namespace api.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("ClimbId")
+                    b.Property<int?>("ClimbId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Content")
@@ -234,6 +234,9 @@ namespace api.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int?>("LogEntryId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
 
@@ -241,9 +244,71 @@ namespace api.Migrations
 
                     b.HasIndex("ClimbId");
 
+                    b.HasIndex("LogEntryId");
+
                     b.HasIndex("UserId");
 
-                    b.ToTable("Comments");
+                    b.ToTable("Comments", t =>
+                        {
+                            t.HasCheckConstraint("CK_Comments_Target", "(\n    \"ClimbId\" IS NOT NULL AND \"LogEntryId\" IS NULL\n)\nOR (\n    \"ClimbId\" IS NULL AND \"LogEntryId\" IS NOT NULL\n)");
+                        });
+                });
+
+            modelBuilder.Entity("api.Models.Follow", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FolloweeId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("FollowerId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FolloweeId");
+
+                    b.HasIndex("FollowerId", "FolloweeId")
+                        .IsUnique();
+
+                    b.ToTable("Follows", t =>
+                        {
+                            t.HasCheckConstraint("CK_Follows_NoSelfFollow", "\"FollowerId\" <> \"FolloweeId\"");
+                        });
+                });
+
+            modelBuilder.Entity("api.Models.Like", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("LogEntryId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LogEntryId");
+
+                    b.HasIndex("UserId", "LogEntryId")
+                        .IsUnique();
+
+                    b.ToTable("Likes");
                 });
 
             modelBuilder.Entity("api.Models.LogEntry", b =>
@@ -451,8 +516,12 @@ namespace api.Migrations
                     b.HasOne("api.Models.Climb", "Climb")
                         .WithMany("Comments")
                         .HasForeignKey("ClimbId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("api.Models.LogEntry", "LogEntry")
+                        .WithMany("Comments")
+                        .HasForeignKey("LogEntryId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("api.Models.AppUser", "User")
                         .WithMany("Comments")
@@ -461,6 +530,46 @@ namespace api.Migrations
                         .IsRequired();
 
                     b.Navigation("Climb");
+
+                    b.Navigation("LogEntry");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("api.Models.Follow", b =>
+                {
+                    b.HasOne("api.Models.AppUser", "Followee")
+                        .WithMany("Followers")
+                        .HasForeignKey("FolloweeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("api.Models.AppUser", "Follower")
+                        .WithMany("Following")
+                        .HasForeignKey("FollowerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Followee");
+
+                    b.Navigation("Follower");
+                });
+
+            modelBuilder.Entity("api.Models.Like", b =>
+                {
+                    b.HasOne("api.Models.LogEntry", "LogEntry")
+                        .WithMany("Likes")
+                        .HasForeignKey("LogEntryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("api.Models.AppUser", "User")
+                        .WithMany("Likes")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LogEntry");
 
                     b.Navigation("User");
                 });
@@ -516,6 +625,12 @@ namespace api.Migrations
                 {
                     b.Navigation("Comments");
 
+                    b.Navigation("Followers");
+
+                    b.Navigation("Following");
+
+                    b.Navigation("Likes");
+
                     b.Navigation("LogEntries");
                 });
 
@@ -531,6 +646,13 @@ namespace api.Migrations
                     b.Navigation("ExternalReferences");
 
                     b.Navigation("LogEntries");
+                });
+
+            modelBuilder.Entity("api.Models.LogEntry", b =>
+                {
+                    b.Navigation("Comments");
+
+                    b.Navigation("Likes");
                 });
 
             modelBuilder.Entity("api.Models.Place", b =>

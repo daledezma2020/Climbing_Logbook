@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
   MapPin,
@@ -365,7 +365,12 @@ export default function Climbs() {
                   return (
                     <TableRow key={climb.id} className="hover:bg-slate-50">
                       <TableCell className="font-medium">
-                        {climb.name}
+                        <Link
+                          to={`/climbs/${climb.id}`}
+                          className="hover:underline"
+                        >
+                          {climb.name}
+                        </Link>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary">{climb.grade}</Badge>

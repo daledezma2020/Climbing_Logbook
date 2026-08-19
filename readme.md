@@ -55,6 +55,29 @@ npm run dev
 ```
 Web app runs on `http://localhost:5173`
 
+## Tests
+
+Run fast backend tests from the repository root:
+
+```bash
+dotnet test api.Tests --filter "Category=Unit"
+```
+
+Backend integration tests use real PostgreSQL behavior. Set `CLIMBING_LOGBOOK_TEST_CONNECTION_STRING` to a dedicated database whose name contains `test`, then run:
+
+```bash
+dotnet test api.Tests --filter "Category=Integration"
+```
+
+Run frontend tests from `web/`:
+
+```bash
+npm test
+npm run test:coverage
+```
+
+Whenever application behavior changes, check its test impact and update the corresponding tests. If automation is not appropriate, document the manual verification in the pull request.
+
 ## Development
 
 - API includes Swagger UI at `/swagger` in development mode
@@ -63,20 +86,78 @@ Web app runs on `http://localhost:5173`
 
 ## Image storage
 
-There is no server-side image storage in this application. Every image is a URL string
-pointing at an external host, and nothing is uploaded to or served by this API.
+Avatars are the only images this API stores. Everything else is still a URL string pointing at
+an external host.
 
-- User avatars default to the Auth0 `picture` claim. `AppUser.PictureUrl` holds an optional
-  user-supplied URL that overrides it.
-- `Climb.PictureUrl` and `Climb.VideoUrl` work the same way.
+- `Climb.PictureUrl` and `Climb.VideoUrl` are URL-only. Nothing is uploaded or served for them.
+- User avatars resolve in three tiers: `AppUser.PictureUrl` if set, otherwise the Auth0
+  `picture` claim, otherwise generated initials.
 
-Supporting real file uploads is deliberately deferred. It is not a small addition, and none of
-it exists yet:
+### Avatar uploads
 
-- an upload endpoint on the API
-- file-type and file-size validation
-- a storage backend (S3, Azure Blob, or local disk) with the matching configuration
-- a serving path for the stored files
+`POST /api/users/me/avatar` accepts a multipart `file` field and writes it to local disk.
 
-This is a prerequisite for the avatar upload button on the profile page. Until it is built,
-the profile page can only accept a URL.
+- Accepted types are JPEG, PNG, and WebP. The type is determined by sniffing the file's magic
+  bytes, and the stored extension comes from that sniff, never from the client-supplied
+  filename.
+- The default size cap is 2 MB.
+- Files are written to the directory named by `Storage:AvatarPath` (default `uploads/avatars`,
+  relative to the API content root) under a generated GUID filename, and served back at
+  `/uploads/avatars/{file}`. Replacing an avatar deletes the previously stored file.
+- Uploading sets `AppUser.PictureUrl` to the served URL, so the tiers above are unchanged.
+
+```json
+"Storage": {
+  "AvatarPath": "uploads/avatars",
+  "AvatarMaxBytes": 2097152
+}
+```
+
+The upload directory is created on startup and is gitignored. This is local-disk storage only.
+Moving to S3 or Azure Blob means adding another `IAvatarStorage` implementation; nothing outside
+that interface assumes a filesystem.
+
+## User endpoints
+
+- `GET /api/users/{username}` - public profile with aggregate stats and recent activity.
+- `GET /api/users/me` - the caller's own profile, including their email. Requires a bearer token.
+- `PUT /api/users/me` - update display name, username, bio, avatar URL, and home place. The user
+  is resolved from the token; a client-supplied id is ignored. Returns 409 when the username is
+  already taken.
+- `POST /api/users/me/avatar` - avatar upload, described above.
+- `GET /api/users/me/stats` - the home page KPI payload. Requires a bearer token.
+- `GET /api/users/{username}/logentries?skip=0&take=25` - that user's log entries, paged.
+- `POST` / `DELETE /api/users/{username}/follow` - follow or unfollow a climber. Both are
+  idempotent, and following yourself returns 400.
+- `GET /api/users/{username}/followers` and `.../following?skip=0&take=25` - paged connections.
+
+## Feed, likes, and comments
+
+The home page shows a feed of log entries from the climbers you follow, plus your own, newest
+first.
+
+- `GET /api/feed?skip=0&take=25` - the caller's feed. Requires a bearer token.
+- `GET /api/logentries/{id}` - a single log entry.
+- `POST` / `DELETE /api/logentries/{id}/like` - like or unlike a logged climb. Idempotent in both
+  directions; a second like is a no-op rather than an error.
+- `GET` / `POST /api/logentries/{id}/comments` - the thread on one logged climb.
+- `GET` / `POST /api/climbs/{id}/comments` - the thread on the climb itself, shown on `/climbs/:id`.
+- `GET /api/climbs/{id}/logentries?skip=0&take=25` - every ascent logged against a climb.
+- `DELETE /api/comments/{id}` - delete your own comment. Returns 403 for anyone else's.
+
+A comment targets exactly one of a climb or a log entry, enforced in the database by the
+`CK_Comments_Target` check constraint, so one table backs both threads. Likes attach to log
+entries only and are unique per `(user, log entry)`.
+
+Reads are public; every write requires a bearer token. The author of a comment or like is always
+resolved from the token and never accepted from the client.
+
+### Home page KPIs
+
+`GET /api/users/me/stats` returns four groups: core send stats, recent activity, places and
+disciplines, and social. The home page renders only the cards the user has enabled, defaulting to
+the core group; that choice lives in the browser's `localStorage`, not on the server.
+
+Hardest-grade comparisons go through the per-system ladders in `api/Services/GradeOrdering.cs`.
+Comparing grades numerically is wrong: it ranks `5.9` above `5.14a` and cannot compare V-scale to
+Font at all.

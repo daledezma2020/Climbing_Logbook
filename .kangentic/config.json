@@ -1,0 +1,18 @@
+{
+  "theme": "dark",
+  "agent": {
+    "permissionMode": "default"
+  },
+  "git": {
+    "worktreesEnabled": true,
+    "autoCleanup": true,
+    "defaultBaseBranch": "develop",
+    "copyFiles": [
+      "web/.env.local"
+    ],
+    "initScript": null
+  },
+  "browser": {
+    "defaultUrl": "http://localhost:5173/"
+  }
+}

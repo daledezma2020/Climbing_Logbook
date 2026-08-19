@@ -1,6 +1,6 @@
 # Authorization
 
-Last updated: July 8, 2026
+Last updated: August 7, 2026
 
 This system uses Auth0 for sign-in and uses access tokens to protect actions in the API.
 
@@ -54,6 +54,8 @@ Protected actions require the frontend to include an access token with the API r
 - Creating a log entry
 - Creating or importing a place
 - Creating, updating, or deleting setters
+- Reading or updating your own profile
+- Uploading your own avatar image
 
 For those actions, the frontend asks Auth0 for an access token, then sends that token to the backend in the request header:
 
@@ -97,6 +99,7 @@ Currently protected areas include:
 - `PlacesController`: creating places and importing OpenStreetMap places
 - `SettersController`: creating, updating, and deleting setters
 - `AuthController`: reading the current authenticated user's profile from the token
+- `UsersController`: reading own profile (`GET /api/users/me`), updating own profile (`PUT /api/users/me`), and uploading an avatar (`POST /api/users/me/avatar`)
 
 Read-only endpoints are mostly left public so visitors can browse existing data without needing an account.
 
@@ -197,6 +200,31 @@ The committed `api/appsettings.json` file only contains placeholders:
 
 Do not commit real Auth0 production values, connection strings, credentials, tokens, or secrets.
 
+### Local Setup for Kangentic Worktrees
+
+Kangentic creates each task in a fresh `git worktree` checkout. A worktree only contains files that git tracks, so gitignored files like `web/.env.local` are not carried over. Without extra setup, a new worktree starts with no frontend Auth0 configuration and the app shows the "Auth0 configuration required" screen.
+
+Kangentic can seed those files for you. In the main repo's `.kangentic/config.json`, list `web/.env.local` under `git.copyFiles`:
+
+```json
+"git": {
+  "copyFiles": ["web/.env.local"]
+}
+```
+
+The same setting is available in the Kangentic UI under Settings -> Git -> Copy Files, which takes a comma-separated list. Kangentic copies each entry into the new worktree at the same relative path, right after the worktree is created.
+
+A few things to know about how `copyFiles` behaves:
+
+- Entries are repo-relative paths to individual files. Globs and directories are not supported, so each file has to be listed on its own.
+- Missing parent directories in the worktree are created automatically.
+- If a source file does not exist, it is skipped silently. A typo in the path produces no error, just a worktree that is still missing the file.
+- Entries starting with `.claude/` are ignored, so that directory cannot be seeded this way.
+
+The backend needs nothing extra. .NET user secrets are keyed by the `UserSecretsId` in `api/api.csproj` and stored machine-globally, so every worktree checks out the same csproj and resolves the same secrets file.
+
+Note that `.kangentic/config.json` is gitignored. This is a per-machine setting, so anyone cloning the repo has to set it up for themselves.
+
 ### Matching Frontend and Backend Values
 
 The frontend audience and backend audience need to match. That is how Auth0 and the API agree that a token was meant for this backend.
@@ -233,8 +261,9 @@ These are the main places to look when reviewing or changing authorization.
 - `web/src/lib/api.ts`: Central API helper that can attach an Auth0 access token to protected requests.
 - `web/src/hooks/catalog-hooks.ts`: Contains frontend data actions for climbs, log entries, places, and imports. Protected actions get an access token before calling the API.
 - `web/src/hooks/useAuthenticatedApi.ts`: Small helper for making authenticated API requests. Currently unused; prefer `apiFetch` from `web/src/lib/api.ts`.
-- `web/src/hooks/user-hooks.ts`: Calls `GET /api/auth/me` once the user is authenticated. This is what triggers provisioning on sign-in, and it is used by the navbar.
+- `web/src/hooks/user-hooks.ts`: Calls `GET /api/auth/me` once the user is authenticated, which is what triggers provisioning on sign-in and feeds the navbar. Also holds the profile hooks: `useUserProfile` and `useUserLogEntries` are public reads, while `useMyProfile` and `useUpdateMyProfile` attach an access token.
 - `web/src/pages/LogClimb.tsx`: Example page that requires sign-in before letting a user log or import a climb.
+- `web/src/pages/EditProfile.tsx`: Requires sign-in, and sends signed-out visitors to Auth0 via `loginWithRedirect`. Public profile pages stay readable without a token.
 - `web/src/components/log/LogEntryForm.tsx`: Gets an access token before creating a log entry.
 - `web/src/components/log/ManualClimbForm.tsx`: Gets an access token before creating a manual climb.
 - `web/.env.example`: Documents the frontend environment variables needed for Auth0 and the API base URL.
@@ -245,7 +274,8 @@ These are the main places to look when reviewing or changing authorization.
 - `api/appsettings.json`: Contains placeholders for the backend Auth0 configuration.
 - `api/api.csproj`: Includes the ASP.NET Core JWT bearer authentication package.
 - `api/Controllers/AuthController.cs`: Provides a protected endpoint that provisions and returns the persisted `AppUser` record for the authenticated caller.
-- `api/Services/UserService.cs`: Looks up the `AppUser` by Auth0 subject and creates it on first contact, deriving a unique username and seeding the display name, email, and avatar.
+- `api/Services/UserService.cs`: Looks up the `AppUser` by Auth0 subject and creates it on first contact, deriving a unique username and seeding the display name, email, and avatar. Also owns profile reads and updates, including username format, reserved-name, and uniqueness validation.
+- `api/Controllers/UsersController.cs`: Public profile reads, plus `[Authorize]` on the caller's own profile, profile updates, and avatar upload. The user is always resolved from the token, never from the request body.
 - `api/Services/Auth0UserInfoClient.cs`: Fetches `name`, `email`, and `picture` from Auth0's `/userinfo` endpoint when the access token does not carry them. A failed lookup is logged and does not block provisioning.
 - `api/Controllers/ClimbsController.cs`: Protects create, import, and delete climb actions with `[Authorize]`.
 - `api/Controllers/LogEntriesController.cs`: Protects log entry creation with `[Authorize]`.
